@@ -8,7 +8,10 @@ from haiku_hnn.src.linear import RemappingLinear
 
 
 class MappingVanillaRNN(hk.VanillaRNN):
-    """Hyperbolic VanillaRNN module with remapping"""
+    """Hyperbolic VanillaRNN module with remapping
+
+    based on Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
+    """
 
     def __init__(
         self,

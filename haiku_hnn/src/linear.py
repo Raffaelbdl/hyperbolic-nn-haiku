@@ -12,7 +12,10 @@ from haiku_hnn.src.core import (
 
 
 class RemappingLinear(hk.Linear):
-    """Hyperbolic Linear module with remapping"""
+    """Hyperbolic Linear module with remapping
+
+    based on Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
+    """
 
     def __init__(
         self,
