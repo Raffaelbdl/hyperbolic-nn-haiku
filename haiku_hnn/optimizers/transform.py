@@ -9,7 +9,17 @@ import optax
 from optax._src.utils import canonicalize_dtype, cast_tree
 
 from haiku_hnn.core import conformal_factor, parallel_transport, norm
-from haiku_hnn.optimizers.update import apply_riemannian_updates
+from haiku_hnn.optimizers.update import apply_riemannian_updates, label_riemannian_fn
+
+
+def mixed_optimizer(
+    non_hyperbolic_optimizer: optax.GradientTransformation,
+    hyperbolic_optimizer: optax.GradientTransformation,
+):
+    return optax.multi_transform(
+        {"riemannian": hyperbolic_optimizer, "euclidian": non_hyperbolic_optimizer},
+        label_riemannian_fn,
+    )
 
 
 def riemannian_scale() -> optax.GradientTransformation:

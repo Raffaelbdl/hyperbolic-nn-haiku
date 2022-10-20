@@ -5,9 +5,9 @@ from jax import lax
 from jax import numpy as jnp
 import numpy as np
 
-from haiku_hnn.src.core import (
-    mobius_bias_translation,
-    mobius_matrix_vector_multiplication,
+from haiku_hnn.core import (
+    m_bias_translation,
+    m_matrix_vector_multiplication,
 )
 
 
@@ -47,15 +47,15 @@ class RemappingLinear(hk.Linear):
         if w_init is None:
             stddev = 1.0 / np.sqrt(self.input_size)
             w_init = hk.initializers.TruncatedNormal(stddev=stddev)
-        w = hk.get_parameter("w", [input_size, output_size], dtype, init=w_init)
-
-        out = mobius_matrix_vector_multiplication(
-            w, inputs, self.c, precision=precision
+        w = hk.get_parameter(
+            "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
 
+        out = m_matrix_vector_multiplication(w, inputs, self.c, precision=precision)
+
         if self.with_bias:
-            b = hk.get_parameter("hyperbolic-b", [output_size], dtype, init=self.b_init)
+            b = hk.get_parameter("riemannian_b", [output_size], dtype, init=self.b_init)
             b = jnp.broadcast_to(b, out.shape)
-            out = mobius_bias_translation(b, out, self.c)
+            out = m_bias_translation(b, out, self.c)
 
         return out
