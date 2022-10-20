@@ -19,7 +19,7 @@ def m_add(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
 
 def conformal_factor(x: jnp.ndarray) -> float:
     """Computes the conformal factor"""
-    return 2 / (1 - safe_norm(x) ** 2)
+    return 2 / (1 - safe_norm(x, 0) ** 2)
 
 
 def expmap(x: jnp.ndarray, v: jnp.ndarray) -> jnp.ndarray:
