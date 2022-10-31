@@ -2,9 +2,9 @@ from typing import Optional
 
 import haiku as hk
 
-from haiku_hnn.src.activation import remapping_relu
+from haiku_hnn.activation import map_relu
 
-from haiku_hnn.src.linear import RemappingLinear
+from haiku_hnn.layers.linear import RemappingLinear
 
 
 class MappingVanillaRNN(hk.VanillaRNN):
@@ -28,7 +28,5 @@ class MappingVanillaRNN(hk.VanillaRNN):
         hidden_to_hidden = RemappingLinear(
             self.hidden_size, self.c, with_bias=self.double_bias
         )
-        out = remapping_relu(
-            input_to_hidden(inputs) + hidden_to_hidden(prev_state), self.c
-        )
+        out = map_relu(input_to_hidden(inputs) + hidden_to_hidden(prev_state), self.c)
         return out, out
