@@ -16,6 +16,7 @@ class StereographicLinear(hk.Linear):
         Constant Curvature Graph Convolutional Networks
             (https://arxiv.org/pdf/1911.05076v1.pdf)
 
+    # TODO Change Attribute section
     Non-inherited attributes:
         k (float): the curvature of the manifold
     """
@@ -36,7 +37,7 @@ class StereographicLinear(hk.Linear):
         self,
         inputs: jnp.ndarray,
         *,
-        precision: Optional[lax.Precision] = None,
+        precision: Optional[lax.Precision] = None,  # TODO Add precision to m_dot
     ) -> jnp.ndarray:
         """Computes a hyperbolic linear transform of the input"""
         if not inputs.shape:
