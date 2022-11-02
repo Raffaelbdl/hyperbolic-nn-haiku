@@ -1,5 +1,3 @@
-from typing import Optional
-
 from jax import numpy as jnp
 
 from haiku_hnn.core.math import arctan_k, tan_k

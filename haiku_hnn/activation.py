@@ -2,35 +2,19 @@ from typing import Callable, Optional, Tuple, Union
 
 from jax import nn
 from jax import numpy as jnp
-from haiku_hnn.core import expmap_zero, logmap_zero
+
+from haiku_hnn.core.stereographic import expmap, expmap0, logmap, logmap0
 
 
-def with_logexpmap(f, c: float):
-    """Decorator to map functions in hyperbolic space"""
-
-    def mapper(*args, **kwargs):
-        v = logmap_zero(args[0], c)
-        v = f(v, **kwargs)
-        v = expmap_zero(v, c)
-        return v
-
-    return mapper
+def m_relu(x: jnp.ndarray, k: float) -> jnp.ndarray:
+    return expmap0(nn.relu(logmap0(x, k)), k)
 
 
-def map_activation(
-    x: jnp.ndarray,
-    c: float,
-    activation: Callable[[jnp.ndarray], jnp.ndarray],
-    **kwargs,
+def m_softmax(
+    x: jnp.ndarray, k: float, axis: Optional[Union[int, Tuple[int, ...]]] = -1
 ) -> jnp.ndarray:
-    return with_logexpmap(activation, c)(x, **kwargs)
+    return expmap0(nn.softmax(logmap0(x, k), axis=axis), k)
 
 
-def map_relu(x: jnp.ndarray, c: float):
-    return map_activation(x, c, nn.relu)
-
-
-def map_softmax(
-    x: jnp.ndarray, c: float, axis: Optional[Union[int, Tuple[int, ...]]] = -1
-):
-    return map_activation(x, c, nn.softmax, axis=axis)
+def m_tanh(x: jnp.ndarray, k: float) -> jnp.ndarray:
+    return expmap0(nn.tanh(logmap0(x, k)), k)
