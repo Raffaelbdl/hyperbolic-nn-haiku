@@ -10,7 +10,7 @@ import optax
 from optax._src.utils import canonicalize_dtype, cast_tree
 
 from haiku_hnn.core.stereographic import conformal_factor, parallel_transport, norm
-from haiku_hnn.optimizers.update import apply_riemannian_updates, label_riemannian_fn
+from haiku_hnn.optimizers.update import apply_riemannian_updates
 
 
 def mixed_optimizer(
