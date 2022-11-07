@@ -5,29 +5,33 @@ from jax import lax
 from jax import numpy as jnp
 import numpy as np
 
-from haiku_hnn.core import (
-    m_bias_translation,
-    m_matrix_vector_multiplication,
-)
+from haiku_hnn.core.stereographic import m_bias, m_dot
 
 
-class RemappingLinear(hk.Linear):
-    """Hyperbolic Linear module with remapping
+class StereographicLinear(hk.Linear):
+    """Linear Module in K-stereographic model
 
-    based on Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
+    References:
+        Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
+        Constant Curvature Graph Convolutional Networks
+            (https://arxiv.org/pdf/1911.05076v1.pdf)
+
+    # TODO Change Attribute section
+    Non-inherited attributes:
+        k (float): the curvature of the manifold
     """
 
     def __init__(
         self,
         output_size: int,
-        c: float,
+        k: float,
         with_bias: bool = True,
         w_init: Optional[hk.initializers.Initializer] = None,
         b_init: Optional[hk.initializers.Initializer] = None,
         name: Optional[str] = None,
     ):
         super().__init__(output_size, with_bias, w_init, b_init, name)
-        self.c = c
+        self.k = k
 
     def __call__(
         self,
@@ -51,11 +55,11 @@ class RemappingLinear(hk.Linear):
             "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
 
-        out = m_matrix_vector_multiplication(w, inputs, self.c, precision=precision)
+        out = m_dot(inputs, w, self.k, precision=precision)
 
         if self.with_bias:
             b = hk.get_parameter("riemannian_b", [output_size], dtype, init=self.b_init)
             b = jnp.broadcast_to(b, out.shape)
-            out = m_bias_translation(b, out, self.c)
+            out = m_bias(b, out, self.k)
 
         return out
