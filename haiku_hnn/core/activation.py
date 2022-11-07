@@ -3,7 +3,7 @@ from typing import Callable, Optional, Tuple, Union
 from jax import nn
 from jax import numpy as jnp
 
-from haiku_hnn.core.stereographic import expmap, expmap0, logmap, logmap0
+from haiku_hnn.core.stereographic import expmap0, logmap0
 
 
 def m_relu(x: jnp.ndarray, k: float) -> jnp.ndarray:

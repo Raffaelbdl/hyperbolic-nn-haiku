@@ -4,7 +4,7 @@ import haiku as hk
 from jax import nn
 from jax import numpy as jnp
 
-from haiku_hnn.activation import m_relu, m_tanh
+from haiku_hnn.core.activation import m_relu, m_tanh
 from haiku_hnn.core.stereographic import logmap0, m_add, m_dot
 from haiku_hnn.layers.linear import StereographicLinear
 
