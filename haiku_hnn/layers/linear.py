@@ -37,7 +37,7 @@ class StereographicLinear(hk.Linear):
         self,
         inputs: jnp.ndarray,
         *,
-        precision: Optional[lax.Precision] = None,  # TODO Add precision to m_dot
+        precision: Optional[lax.Precision] = None,
     ) -> jnp.ndarray:
         """Computes a hyperbolic linear transform of the input"""
         if not inputs.shape:
@@ -55,7 +55,7 @@ class StereographicLinear(hk.Linear):
             "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
 
-        out = m_dot(inputs, w, self.k)
+        out = m_dot(inputs, w, self.k, precision=precision)
 
         if self.with_bias:
             b = hk.get_parameter("riemannian_b", [output_size], dtype, init=self.b_init)
