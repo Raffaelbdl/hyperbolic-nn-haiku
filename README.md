@@ -13,7 +13,7 @@ The neural networks will be implemented with [Haiku](https://github.com/deepmind
 The following content is currently implemented
 
 ### Core
-Contains all the functions related to riemannian spaces (eg. Möbius operations)
+Contains most of the functions related to riemannian spaces (eg. Möbius operations, distance)
 
 ### Layers
 * `StereographicLinearLayer`: base linear layer in K-stereographic model
