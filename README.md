@@ -4,7 +4,7 @@ This is a work in progress ❗
 
 Hyperbolic embedding has proved to be powerful in numerous applications like graph embedding. The goal of this project is to make some of the current advances in Hyperbolic Neural Networks avaialable in JAX.
 
-The neural networks will be implemented with [Haiku](https://github.com/deepmind/dm-haiku) and the optimizers will be based on [Optax](https://github.com/deepmind/optax).
+The neural networks are implemented with [Haiku](https://github.com/deepmind/dm-haiku) and the optimizers are based on [Optax](https://github.com/deepmind/optax).
 
 ## Installation 
 `TODO`
