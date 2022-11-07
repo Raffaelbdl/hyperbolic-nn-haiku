@@ -25,6 +25,9 @@ Contains all the functions related to riemannian spaces (eg. Möbius operations)
 * `riemannian_adagrad`: riemannian version of the adagrad optimizer
 * `riemannian_adam`: riemannian version of the adam optimizer
 
+## References
+This project is heavily inspired by [Geoopt](https://github.com/geoopt/geoopt) (Pytorch).
+
 ## Citing 
 
 ```bibtex
