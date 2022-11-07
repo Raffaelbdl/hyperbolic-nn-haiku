@@ -1,28 +1,38 @@
-# hyperbolic-nn-haiku
+# Hyperbolic Neural Networks with `dm-haiku`
 
 This is a work in progress ❗
 
-The goal of this project is to implement various hyperbolic neural networks as well as optimizers, test them and make them available in JAX.
+Hyperbolic embedding has proved to be powerful in numerous applications like graph embedding. The goal of this project is to make some of the current advances in Hyperbolic Neural Networks avaialable in JAX.
 
-The neural networks will be implemented on Haiku and the optimizers will be based on the optax library.
+The neural networks will be implemented with [Haiku](https://github.com/deepmind/dm-haiku) and the optimizers will be based on [Optax](https://github.com/deepmind/optax).
 
-## Current status
+## Installation 
+`TODO`
 
-### Papers implemented :
-* Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
-    - [] First Implementation
-    - [] Obtain paper results
+## Content
+The following content is currently implemented
 
-* Riemannian Adaptive Optimization Methods 
-    (http://arxiv.org/abs/1810.00760)
-    - [] First Implementation
-    - [] Obtain paper results
+### Core
+Contains all the functions related to riemannian spaces (eg. Möbius operations)
 
-* Constant Curvature Graph Convolutional Networks
-    (https://arxiv.org/pdf/1911.05076v1.pdf)
-    - [] First Implementation
-    - [] Obtain paper results
+### Layers
+* `StereographicLinearLayer`: base linear layer in K-stereographic model
+* `StereographicVanillaRNN`: base rnn layer in K-stereographic model
+* `StereographicGRU`: gru cell in K-stereographic model
 
-* Fully Hyperbolic Neural Networks (https://arxiv.org/abs/2105.14686)
-    - [] First Implementation
-    - [] Obtain paper results
+### Optimizers
+* `rsgd`: base riemannian stochastic gradient descent
+* `riemannian_adagrad`: riemannian version of the adagrad optimizer
+* `riemannian_adam`: riemannian version of the adam optimizer
+
+## Citing 
+
+```bibtex
+@software{hnn_haiku2022bolladilorenzo,
+    title = {Hyperbolic Neural Networks with dm-haiku},
+    author = {Raffael Bolla Di Lorenzo},
+    url = {https://github.com/Raffaelbdl/hyperbolic-nn-haiku},
+    version = {0.0.1},
+    year = {2022}
+}
+```
