@@ -7,7 +7,16 @@ Hyperbolic embedding has proved to be powerful in numerous applications like gra
 The neural networks are implemented with [Haiku](https://github.com/deepmind/dm-haiku) and the optimizers are based on [Optax](https://github.com/deepmind/optax).
 
 ## Installation 
-`TODO`
+
+The repository is not pip-installable yet. Please clone it locally:
+
+```bash
+git clone git@github.com:Raffaelbdl/hyperbolic-nn-haiku.git
+cd hyperbolic-nn-haiku
+pip install -r requirements.txt
+```
+
+Make sure to install jax by following the [official guide](https://github.com/google/jax#installation).
 
 ## Content
 The following content is currently implemented
