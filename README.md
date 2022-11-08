@@ -19,7 +19,7 @@ pip install -r requirements.txt
 Make sure to install jax by following the [official guide](https://github.com/google/jax#installation).
 
 ## Content
-The following content is currently implemented
+The following content is currently implemented.
 
 ### Core
 Contains most of the functions related to riemannian spaces (eg. Möbius operations, distance).
