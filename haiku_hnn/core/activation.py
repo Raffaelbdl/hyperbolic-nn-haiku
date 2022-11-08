@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable
 
 from jax import nn
 from jax import numpy as jnp
@@ -6,15 +6,27 @@ from jax import numpy as jnp
 from haiku_hnn.core.stereographic import expmap0, logmap0
 
 
-def m_relu(x: jnp.ndarray, k: float) -> jnp.ndarray:
-    return expmap0(nn.relu(logmap0(x, k)), k)
+def k_fn(k: float, fn: Callable) -> Callable:
+    """Wraps a function to make it compatible in the K-stereographic model
+
+    The given function should have:
+        a first argument which is the jnp.ndarray on which it is applied
+        kwargs that are specific arguments (eg. axis)
+
+    References:
+        Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
+
+    Args:
+        k (float): the curvature of the manifold
+        fn (Callable): the function to wrap
+    """
+
+    def wrapper(x: jnp.ndarray, **kwargs):
+        return expmap0(fn(logmap0(x, k), **kwargs), k)
+
+    return wrapper
 
 
-def m_softmax(
-    x: jnp.ndarray, k: float, axis: Optional[Union[int, Tuple[int, ...]]] = -1
-) -> jnp.ndarray:
-    return expmap0(nn.softmax(logmap0(x, k), axis=axis), k)
-
-
-def m_tanh(x: jnp.ndarray, k: float) -> jnp.ndarray:
-    return expmap0(nn.tanh(logmap0(x, k)), k)
+k_relu = lambda x, k, **kwargs: k_fn(k, nn.relu)(x, **kwargs)
+k_softmax = lambda x, k, **kwargs: k_fn(k, nn.softmax)(x, **kwargs)
+k_tanh = lambda x, k, **kwargs: k_fn(k, nn.tanh)(x, **kwargs)

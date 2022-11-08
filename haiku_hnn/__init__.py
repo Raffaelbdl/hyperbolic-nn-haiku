@@ -14,6 +14,6 @@ from haiku_hnn.optimizers.transform import mixed_optimizer
 from haiku_hnn.optimizers.update import apply_mixed_updates
 
 # import activation functions
-from haiku_hnn.core.activation import m_softmax
-from haiku_hnn.core.activation import m_relu
-from haiku_hnn.core.activation import m_tanh
+from haiku_hnn.core.activation import k_softmax
+from haiku_hnn.core.activation import k_relu
+from haiku_hnn.core.activation import k_tanh
