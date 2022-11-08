@@ -4,7 +4,7 @@ import haiku as hk
 from jax import nn
 from jax import numpy as jnp
 
-from haiku_hnn.core.activation import m_relu, m_tanh
+from haiku_hnn.core.activation import k_relu, k_tanh
 from haiku_hnn.core.stereographic import logmap0, m_add, m_dot
 from haiku_hnn.layers.linear import StereographicLinear
 
@@ -39,7 +39,7 @@ class StereographicVanillaRNN(hk.VanillaRNN):
 
         # arbitrary order for Möbius addition used here
         out = m_add(hidden_to_hidden(prev_state), input_to_hidden(inputs))
-        out = m_relu(out, self.k)
+        out = k_relu(out, self.k)
         return out, out
 
 
@@ -98,7 +98,7 @@ class StereographicGRU(hk.GRU):
 
         # first term of the addition
         h_tilt_1 = jnp.dot(h_tilt_hidden_to_hidden, jnp.diag(r))
-        h_tilt_1 = m_tanh(h_tilt_1, self.k)
+        h_tilt_1 = k_tanh(h_tilt_1, self.k)
         h_tilt_1 = m_dot(state, h_tilt_1)
         # second term of the addition
         h_tilt_2 = h_tilt_input_to_hidden(inputs)
