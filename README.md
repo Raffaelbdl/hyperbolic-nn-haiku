@@ -1,28 +1,51 @@
-# hyperbolic-nn-haiku
+# Hyperbolic Neural Networks with `dm-haiku`
 
 This is a work in progress ❗
 
-The goal of this project is to implement various hyperbolic neural networks as well as optimizers, test them and make them available in JAX.
+Hyperbolic embedding has proved to be powerful in numerous applications like graph embedding. The goal of this project is to make some of the current advances in Hyperbolic Neural Networks avaialable in JAX.
 
-The neural networks will be implemented on Haiku and the optimizers will be based on the optax library.
+The neural networks are implemented with [Haiku](https://github.com/deepmind/dm-haiku) and the optimizers are based on [Optax](https://github.com/deepmind/optax).
 
-## Current status
+## Installation 
 
-### Papers implemented :
-* Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
-    - [] First Implementation
-    - [] Obtain paper results
+The repository is not pip-installable yet. Please clone it locally:
 
-* Riemannian Adaptive Optimization Methods 
-    (http://arxiv.org/abs/1810.00760)
-    - [] First Implementation
-    - [] Obtain paper results
+```bash
+git clone git@github.com:Raffaelbdl/hyperbolic-nn-haiku.git
+cd hyperbolic-nn-haiku
+pip install -r requirements.txt
+```
 
-* Constant Curvature Graph Convolutional Networks
-    (https://arxiv.org/pdf/1911.05076v1.pdf)
-    - [] First Implementation
-    - [] Obtain paper results
+Make sure to install jax by following the [official guide](https://github.com/google/jax#installation).
 
-* Fully Hyperbolic Neural Networks (https://arxiv.org/abs/2105.14686)
-    - [] First Implementation
-    - [] Obtain paper results
+## Content
+The following content is currently implemented.
+
+### Core
+Contains most of the functions related to riemannian spaces (eg. Möbius operations, distance).
+It also includes a wrapper for functions to make them applyable in the K-stereographic space.
+
+### Layers
+* `StereographicLinearLayer`: base linear layer in K-stereographic model
+* `StereographicVanillaRNN`: base rnn layer in K-stereographic model
+* `StereographicGRU`: gru cell in K-stereographic model
+
+### Optimizers
+* `rsgd`: base riemannian stochastic gradient descent
+* `riemannian_adagrad`: riemannian version of the adagrad optimizer
+* `riemannian_adam`: riemannian version of the adam optimizer
+
+## References
+This project is heavily inspired by [Geoopt](https://github.com/geoopt/geoopt) (Pytorch).
+
+## Citing 
+
+```bibtex
+@software{hnn_haiku2022bolladilorenzo,
+    title = {Hyperbolic Neural Networks with dm-haiku},
+    author = {Raffael Bolla Di Lorenzo},
+    url = {https://github.com/Raffaelbdl/hyperbolic-nn-haiku},
+    version = {0.0.1},
+    year = {2022}
+}
+```
