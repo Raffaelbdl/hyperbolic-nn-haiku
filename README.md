@@ -8,12 +8,9 @@ The neural networks are implemented with [Haiku](https://github.com/deepmind/dm-
 
 ## Installation 
 
-The repository is not pip-installable yet. Please clone it locally:
-
-```bash
-git clone git@github.com:Raffaelbdl/hyperbolic-nn-haiku.git
-cd hyperbolic-nn-haiku
-pip install -r requirements.txt
+Install the project with pip:
+```
+pip install git+https://github.com/Raffaelbdl/hyperbolic-nn-haiku.git
 ```
 
 Make sure to install jax by following the [official guide](https://github.com/google/jax#installation).
