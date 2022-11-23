@@ -105,3 +105,24 @@ def riemannian_adam(
         ),
         _scale_by_learning_rate(learning_rate),
     )
+
+
+def riemannian_adamw(
+    k: float,
+    learning_rate: ScalarOrSchedule,
+    b1: float = 0.9,
+    b2: float = 0.999,
+    eps: float = 1e-8,
+    eps_root: float = 0.0,
+    mu_dtype: Optional[Any] = None,
+    weight_decay: float = 1e-4,
+    mask=None,
+) -> optax.GradientTransformation:
+    return optax.chain(
+        transform.riemannian_scale(k),
+        transform.riemannian_scale_by_adam(
+            k=k, b1=b1, b2=b2, eps=eps, eps_root=eps_root, mu_dtype=mu_dtype
+        ),
+        optax.add_decayed_weights(weight_decay, mask),
+        _scale_by_learning_rate(learning_rate),
+    )
