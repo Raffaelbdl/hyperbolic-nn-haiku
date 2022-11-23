@@ -1,11 +1,12 @@
 from typing import Optional
 
 import haiku as hk
+import jax
 from jax import nn
 from jax import numpy as jnp
 
-from haiku_hnn.core.activation import k_relu, k_tanh
-from haiku_hnn.core.stereographic import logmap0, m_add, m_dot
+from haiku_hnn.core.activation import k_relu, k_tanh, k_fn
+from haiku_hnn.core.stereographic import expmap0, m_add, m_dot
 from haiku_hnn.layers.linear import StereographicLinear
 
 
@@ -68,11 +69,10 @@ class StereographicGRU(hk.GRU):
 
     def __call__(self, inputs, state):
         """Computes a hyperbolic gru transform of the input and the previous state"""
-        # Naive implementation from the paper
-        # TODO Copy Haiku native implementation
-
         if inputs.ndim not in (1, 2):
             raise ValueError("GRU inputs must be rank-1 or rank-2.")
+
+        inputs = expmap0(inputs, self.k)
 
         r_input_to_hidden = StereographicLinear(self.hidden_size, self.k)
         r_hidden_to_hidden = StereographicLinear(
@@ -84,26 +84,36 @@ class StereographicGRU(hk.GRU):
             self.hidden_size, self.k, with_bias=False
         )
 
-        r = m_add(r_hidden_to_hidden(state), r_input_to_hidden(inputs))
-        r = nn.sigmoid(logmap0(r, self.k))
+        r = m_add(r_hidden_to_hidden(state), r_input_to_hidden(inputs), self.k)
+        r = k_fn(self.k, nn.sigmoid)(r)
 
-        z = m_add(z_hidden_to_hidden(state), z_input_to_hidden(inputs))
-        z = nn.sigmoid(logmap0(z, self.k))
+        z = m_add(z_hidden_to_hidden(state), z_input_to_hidden(inputs), self.k)
+        z = k_fn(self.k, nn.sigmoid)(z)
 
         h_tilt_input_to_hidden = StereographicLinear(self.hidden_size, self.k)
         # TOTO Add args in get_parameter
         h_tilt_hidden_to_hidden = hk.get_parameter(
-            "riemannian_u", [self.hidden_size, self.hidden_size]
+            "riemannian_u",
+            [self.hidden_size, self.hidden_size],
+            init=hk.initializers.VarianceScaling(),
         )
 
         # first term of the addition
-        h_tilt_1 = jnp.dot(h_tilt_hidden_to_hidden, jnp.diag(r))
-        h_tilt_1 = k_tanh(h_tilt_1, self.k)
-        h_tilt_1 = m_dot(state, h_tilt_1)
-        # second term of the addition
-        h_tilt_2 = h_tilt_input_to_hidden(inputs)
-        h_tilt = m_add(h_tilt_1, h_tilt_2)
+        def to_diag(x):
+            return jnp.diag(x)
 
-        state = m_add(state, m_dot(m_add(-state, h_tilt), jnp.diag(z)))
+        h_tilt_1 = jnp.matmul(h_tilt_hidden_to_hidden, jax.vmap(to_diag)(r))
+        h_tilt_1 = k_tanh(h_tilt_1, self.k)
+        h_tilt_1 = m_dot(state, h_tilt_1, self.k)
+        # second term of the addition
+
+        h_tilt_2 = h_tilt_input_to_hidden(inputs)
+
+        h_tilt = m_add(h_tilt_1, h_tilt_2, self.k)
+        state = m_add(
+            state,
+            m_dot(m_add(-state, h_tilt, self.k), jax.vmap(to_diag)(z), self.k),
+            self.k,
+        )
 
         return state, state
