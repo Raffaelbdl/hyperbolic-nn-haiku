@@ -1,4 +1,5 @@
 from jax import numpy as jnp
+import jax
 
 from haiku_hnn.core.math import arctan_k, tan_k
 
@@ -78,7 +79,8 @@ def expmap(x: jnp.ndarray, v: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of v from the tangent plane of x onto the hyperboloid surface
     """
-    norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
+    # norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
+    norm_v = jnp.sqrt(jnp.sum(jnp.square(v), axis=-1, keepdims=True)) + 1e-15
 
     transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * conformal_factor(x, k) * norm_v / 2, k)
     transformed_v *= v / norm_v
@@ -100,7 +102,9 @@ def expmap0(v: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of v from the tangent plane of the origin onto the hyperboloid surface
     """
-    norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
+    # norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
+    v += 1e-15
+    norm_v = jnp.sqrt(jnp.sum(jnp.square(v), axis=-1, keepdims=True))
 
     transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * 2 * norm_v, k)
     transformed_v *= v / norm_v
@@ -147,9 +151,9 @@ def logmap0(y: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of y from the hyperboloid surface onto the tangent plane of the origin
     """
-    norm_y = jnp.linalg.norm(y, axis=-1, keepdims=True) + 1e-15
-
-    return 0.5 * jnp.power(jnp.abs(k), -0.5) * arctan_k(norm_y, k) * (y / norm_y)
+    # norm_y = jnp.linalg.norm(y, axis=-1, keepdims=True) + 1e-15
+    norm_y = jnp.sqrt(jnp.sum(jnp.square(y), axis=-1, keepdims=True)) + 1e-6
+    return 0.5 / jnp.sqrt(jnp.abs(k)) * arctan_k(norm_y, k) * (y / norm_y)
 
 
 def dist(x: jnp.ndarray, y: jnp.ndarray, k: float) -> float:
