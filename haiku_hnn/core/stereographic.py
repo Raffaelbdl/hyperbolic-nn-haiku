@@ -14,9 +14,7 @@ def conformal_factor(x: jnp.ndarray, k: float) -> jnp.ndarray:
         x (jnp.ndarray): the point where the conformal factor is computed
         k (float): the curvature of the manifold
     """
-    return 4 / jnp.maximum(
-        1 + k * jnp.sum(jnp.square(x), axis=-1, keepdims=True), 1e-15
-    )
+    return 4 / (1 + k * jnp.sum(jnp.square(x), axis=-1, keepdims=True) + 1e-15)
 
 
 def m_add(a: jnp.ndarray, b: jnp.ndarray, k: float) -> jnp.ndarray:
@@ -42,7 +40,7 @@ def m_add(a: jnp.ndarray, b: jnp.ndarray, k: float) -> jnp.ndarray:
 
     denominator = 1 - 2 * k * ab + k**2 * norm_a2 * norm_b2
 
-    return project(numerator / jnp.maximum(denominator, 1e-15), k)
+    return project(numerator / (denominator + 1e-15), k)
 
 
 def m_scale(a: jnp.ndarray, s: float, k: float) -> jnp.ndarray:
@@ -60,7 +58,7 @@ def m_scale(a: jnp.ndarray, s: float, k: float) -> jnp.ndarray:
     Returns:
         The Möbius scaling of a per s in the K-stereographic model
     """
-    norm_a = jnp.maximum(jnp.linalg.norm(a, axis=-1, keepdims=True), 1e-15)
+    norm_a = jnp.linalg.norm(a, axis=-1, keepdims=True) + 1e-15
     return project(tan_k(s / arctan_k(norm_a), k) * (a / norm_a), k)
 
 
@@ -80,7 +78,7 @@ def expmap(x: jnp.ndarray, v: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of v from the tangent plane of x onto the hyperboloid surface
     """
-    norm_v = jnp.maximum(jnp.linalg.norm(v, axis=-1, keepdims=True), 1e-15)
+    norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
 
     transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * conformal_factor(x, k) * norm_v / 2, k)
     transformed_v *= v / norm_v
@@ -102,7 +100,7 @@ def expmap0(v: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of v from the tangent plane of the origin onto the hyperboloid surface
     """
-    norm_v = jnp.maximum(jnp.linalg.norm(v, axis=-1, keepdims=True), 1e-15)
+    norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
 
     transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * 2 * norm_v, k)
     transformed_v *= v / norm_v
@@ -126,9 +124,7 @@ def logmap(x: jnp.ndarray, y: jnp.ndarray, k: float) -> jnp.ndarray:
         The projection of y from the hyperboloid surface onto the tangent plane of x
     """
     mx_madd_y = m_add(-x, y, k)
-    norm_mx_madd_y = jnp.maximum(
-        jnp.linalg.norm(mx_madd_y, axis=-1, keepdims=True), 1e-15
-    )
+    norm_mx_madd_y = jnp.linalg.norm(mx_madd_y, axis=-1, keepdims=True) + 1e-15
 
     res = 2 * jnp.power(jnp.abs(k), -0.5) / conformal_factor(x, k)
     res *= arctan_k(norm_mx_madd_y, k)
@@ -151,7 +147,7 @@ def logmap0(y: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of y from the hyperboloid surface onto the tangent plane of the origin
     """
-    norm_y = jnp.maximum(jnp.linalg.norm(y, axis=-1, keepdims=True), 1e-15)
+    norm_y = jnp.linalg.norm(y, axis=-1, keepdims=True) + 1e-15
 
     return 0.5 * jnp.power(jnp.abs(k), -0.5) * arctan_k(norm_y, k) * (y / norm_y)
 
@@ -242,7 +238,7 @@ def gyration(u, v, w):
     a = -dot_uw * norm_v2 - dot_vw + 2 * dot_uv * dot_vw
     b = -dot_vw * norm_u2 + dot_uw
     d = 1 - 2 * dot_uv + norm_u2 * norm_v2
-    return w + 2 * (a * u + b * v) / jnp.maximum(d, 1e-15)
+    return w + 2 * (a * u + b * v) / (d + 1e-15)
 
 
 def norm(x: jnp.ndarray, u: jnp.ndarray, k: float) -> jnp.ndarray:
@@ -263,6 +259,6 @@ def project(x: jnp.ndarray, k: float, eps: float = 4e-3) -> jnp.ndarray:
         eps (float): distance to the edge of the manifold
     """
     max_norm = (1 - eps) * jnp.power(jnp.abs(k), -0.5)
-    norm = jnp.maximum(jnp.linalg.norm(x, axis=-1, keepdims=True), 1e-15)
+    norm = jnp.linalg.norm(x, axis=-1, keepdims=True) + 1e-15
     cond = norm > max_norm
     return jnp.where(cond, 1 / norm * max_norm, 1.0) * x
