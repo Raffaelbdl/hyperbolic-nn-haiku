@@ -265,5 +265,4 @@ def project(x: jnp.ndarray, k: float, eps: float = 4e-3) -> jnp.ndarray:
     max_norm = (1 - eps) * jnp.power(jnp.abs(k), -0.5)
     norm = jnp.maximum(jnp.linalg.norm(x, axis=-1, keepdims=True), 1e-15)
     cond = norm > max_norm
-    projected = x / norm * max_norm
-    return jnp.where(cond, projected, x)
+    return jnp.where(cond, 1 / norm * max_norm, 1.0) * x
