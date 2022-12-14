@@ -59,7 +59,7 @@ def apply_mixed_updates(
     """
 
     def update_fn(p, u, l):
-        if "riemannian" == l:
+        if "riemannian" in l:
             return jnp.asarray(expmap(p, u, k).astype(jnp.asarray(p).dtype))
         return jnp.asarray(p + u).astype(jnp.asarray(p).dtype)
 

@@ -116,13 +116,12 @@ def riemannian_adamw(
     eps_root: float = 0.0,
     mu_dtype: Optional[Any] = None,
     weight_decay: float = 1e-4,
-    mask=None,
 ) -> optax.GradientTransformation:
     return optax.chain(
         transform.riemannian_scale(k),
         transform.riemannian_scale_by_adam(
             k=k, b1=b1, b2=b2, eps=eps, eps_root=eps_root, mu_dtype=mu_dtype
         ),
-        optax.add_decayed_weights(weight_decay, mask),
+        transform.riemannian_add_decayed_weights(k, weight_decay),
         _scale_by_learning_rate(learning_rate),
     )

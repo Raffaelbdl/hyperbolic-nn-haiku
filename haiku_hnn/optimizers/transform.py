@@ -9,7 +9,13 @@ from jax import numpy as jnp
 import optax
 from optax._src.utils import canonicalize_dtype, cast_tree
 
-from haiku_hnn.core.stereographic import conformal_factor, parallel_transport, norm
+from haiku_hnn.core.stereographic import (
+    conformal_factor,
+    parallel_transport,
+    norm,
+    m_scale,
+    m_add,
+)
 from haiku_hnn.optimizers.update import apply_riemannian_updates
 
 
@@ -227,5 +233,38 @@ def riemannian_scale_by_rss(
             lambda scale, g: scale * g, inv_sqrt_g_square, updates
         )
         return updates, optax.ScaleByRssState(sum_of_squares=sum_of_squares)
+
+    return optax.GradientTransformation(init_fn, update_fn)
+
+
+AddDecayedWeightsState = optax.EmptyState
+
+
+def riemannian_add_decayed_weights(
+    k: float,
+    weight_decay: float = 0.0,
+) -> optax.GradientTransformation:
+    """Add parameter scaled by `weight_decay`.
+
+    Args:
+      weight_decay: a scalar weight decay rate.
+      mask: a tree with same structure as (or a prefix of) the params PyTree,
+        or a Callable that returns such a pytree given the params/updates.
+        The leaves should be booleans, `True` for leaves/subtrees you want to
+        apply the transformation to, and `False` for those you want to skip.
+
+    Returns:
+      An (init_fn, update_fn) tuple.
+    """
+
+    def init_fn(params):
+        del params
+        return AddDecayedWeightsState()
+
+    def update_fn(updates, state, params):
+        updates = jax.tree_util.tree_map(
+            lambda g, p: m_add(g, m_scale(weight_decay, p, k), k), updates, params
+        )
+        return updates, state
 
     return optax.GradientTransformation(init_fn, update_fn)
