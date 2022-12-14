@@ -39,8 +39,12 @@ class StereographicVanillaRNN(hk.VanillaRNN):
         )
 
         # arbitrary order for Möbius addition used here
-        out = m_add(hidden_to_hidden(prev_state), input_to_hidden(inputs))
+        out = m_add(
+            hidden_to_hidden(prev_state), input_to_hidden(inputs), use_project=False
+        )
         out = k_relu(out, self.k)
+
+        out = project(out)
         return out, out
 
 

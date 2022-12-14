@@ -5,7 +5,7 @@ from jax import lax
 from jax import numpy as jnp
 import numpy as np
 
-from haiku_hnn.core.stereographic import m_bias, m_dot, m_add
+from haiku_hnn.core.stereographic import m_bias, m_dot, m_add, project
 
 
 class StereographicLinear(hk.Linear):
@@ -55,14 +55,14 @@ class StereographicLinear(hk.Linear):
             "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
 
-        out = m_dot(inputs, w, self.k, precision=precision)
+        out = m_dot(inputs, w, self.k, precision=precision, use_project=False)
 
         if self.with_bias:
             b = hk.get_parameter("riemannian_b", [output_size], dtype, init=self.b_init)
             b = jnp.broadcast_to(b, out.shape)
-            out = m_bias(b, out, self.k)
+            out = m_bias(b, out, self.k, use_project=False)
 
-        return out
+        return project(out, self.k)
 
 
 class StereographicConcatLinear(hk.Linear):

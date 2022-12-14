@@ -18,7 +18,9 @@ def conformal_factor(x: jnp.ndarray, k: float) -> jnp.ndarray:
     return 4 / (1 + k * jnp.sum(jnp.square(x), axis=-1, keepdims=True) + 1e-15)
 
 
-def m_add(a: jnp.ndarray, b: jnp.ndarray, k: float) -> jnp.ndarray:
+def m_add(
+    a: jnp.ndarray, b: jnp.ndarray, k: float, use_project: bool = False
+) -> jnp.ndarray:
     """Computes the Möbius addition in the K-stereographic model
 
     Reference:
@@ -41,7 +43,9 @@ def m_add(a: jnp.ndarray, b: jnp.ndarray, k: float) -> jnp.ndarray:
 
     denominator = 1 - 2 * k * ab + k**2 * norm_a2 * norm_b2
 
-    return project(numerator / (denominator + 1e-15), k)
+    if use_project:
+        return project(numerator / (denominator + 1e-15), k)
+    return numerator / (denominator + 1e-15)
 
 
 def m_scale(a: jnp.ndarray, s: float, k: float) -> jnp.ndarray:
@@ -87,7 +91,7 @@ def expmap(x: jnp.ndarray, v: jnp.ndarray, k: float) -> jnp.ndarray:
     return project(m_add(x, transformed_v, k), k)
 
 
-def expmap0(v: jnp.ndarray, k: float) -> jnp.ndarray:
+def expmap0(v: jnp.ndarray, k: float, use_project: bool = False) -> jnp.ndarray:
     """Computes the exponential mapping in the K-stereographic model at the origin
 
     Reference:
@@ -108,7 +112,10 @@ def expmap0(v: jnp.ndarray, k: float) -> jnp.ndarray:
 
     transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * 2 * norm_v, k)
     transformed_v *= v / norm_v
-    return project(transformed_v, k)
+
+    if use_project:
+        return project(transformed_v, k)
+    return transformed_v
 
 
 def logmap(x: jnp.ndarray, y: jnp.ndarray, k: float) -> jnp.ndarray:
@@ -173,7 +180,9 @@ def dist(x: jnp.ndarray, y: jnp.ndarray, k: float) -> float:
     return 2 * dist_euclid * (1 - k * dist_euclid * (dist_euclid / 3 + dot_xy))
 
 
-def m_dot(x: jnp.ndarray, w: jnp.ndarray, k: float, precision=None) -> jnp.ndarray:
+def m_dot(
+    x: jnp.ndarray, w: jnp.ndarray, k: float, precision=None, use_project: bool = False
+) -> jnp.ndarray:
     """Computes the dot product between x and w in the K-stereographic model
 
     Reference:
@@ -189,10 +198,14 @@ def m_dot(x: jnp.ndarray, w: jnp.ndarray, k: float, precision=None) -> jnp.ndarr
     Returns:
         The Möbius dot product between x and w in the K-stereographic model
     """
-    return project(expmap0(jnp.dot(logmap0(x, k), w, precision=precision), k), k)
+    if use_project:
+        return project(expmap0(jnp.dot(logmap0(x, k), w, precision=precision), k), k)
+    return expmap0(jnp.dot(logmap0(x, k), w, precision=precision), k)
 
 
-def m_bias(x: jnp.ndarray, b: jnp.ndarray, k: float) -> float:
+def m_bias(
+    x: jnp.ndarray, b: jnp.ndarray, k: float, use_project: bool = False
+) -> float:
     """Computes the bias translation of x by b in the K-stereographic model
 
     Reference:
@@ -207,7 +220,9 @@ def m_bias(x: jnp.ndarray, b: jnp.ndarray, k: float) -> float:
     Returns:
         The Möbius bias translation of x by b in the K-stereographic model
     """
-    return project(expmap(x, 4 / conformal_factor(x, k) * logmap0(b, k), k), k)
+    if use_project:
+        return project(expmap(x, 4 / conformal_factor(x, k) * logmap0(b, k), k), k)
+    return expmap(x, 4 / conformal_factor(x, k) * logmap0(b, k), k)
 
 
 def parallel_transport(
@@ -263,6 +278,6 @@ def project(x: jnp.ndarray, k: float, eps: float = 4e-3) -> jnp.ndarray:
         eps (float): distance to the edge of the manifold
     """
     max_norm = (1 - eps) * jnp.power(jnp.abs(k), -0.5)
-    norm = jnp.linalg.norm(x, axis=-1, keepdims=True) + 1e-15
+    norm = jnp.sum(jnp.square(x), axis=-1, keepdims=True) + 1e-15
     cond = norm > max_norm
     return jnp.where(cond, 1 / norm * max_norm, 1.0) * x
