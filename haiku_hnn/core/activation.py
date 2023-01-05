@@ -20,6 +20,8 @@ def k_fn(k: float, fn: Callable) -> Callable:
         k (float): the curvature of the manifold
         fn (Callable): the function to wrap
     """
+    if k == 0:
+        return fn
 
     def wrapper(x: jnp.ndarray, **kwargs):
         return expmap0(fn(logmap0(x, k), **kwargs), k)
