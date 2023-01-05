@@ -5,7 +5,7 @@ from jax import lax
 from jax import numpy as jnp
 import numpy as np
 
-from haiku_hnn.core.stereographic import m_bias, m_dot, m_add
+from haiku_hnn.core.stereographic import m_bias, m_dot, m_add, project
 
 
 class StereographicLinear(hk.Linear):
@@ -29,8 +29,10 @@ class StereographicLinear(hk.Linear):
         w_init: Optional[hk.initializers.Initializer] = None,
         b_init: Optional[hk.initializers.Initializer] = None,
         name: Optional[str] = None,
+        learnable: bool = False,
     ):
         super().__init__(output_size, with_bias, w_init, b_init, name)
+        self.learnable = learnable
         self.k = k
 
     def __call__(
@@ -47,6 +49,16 @@ class StereographicLinear(hk.Linear):
         output_size = self.output_size
         dtype = inputs.dtype
 
+        if self.learnable:
+            k = self.k = hk.get_parameter(
+                "riemannian_k",
+                [],
+                dtype,
+                init=lambda *args: jnp.array(self.k, dtype=dtype),
+            )
+        else:
+            k = self.k
+
         w_init = self.w_init
         if w_init is None:
             stddev = 1.0 / np.sqrt(self.input_size)
@@ -55,14 +67,14 @@ class StereographicLinear(hk.Linear):
             "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
 
-        out = m_dot(inputs, w, self.k, precision=precision)
+        out = m_dot(inputs, w, k, precision=precision)
 
         if self.with_bias:
             b = hk.get_parameter("riemannian_b", [output_size], dtype, init=self.b_init)
             b = jnp.broadcast_to(b, out.shape)
-            out = m_bias(b, out, self.k)
+            out = m_bias(b, out, k)
 
-        return out
+        return project(out, k)
 
 
 class StereographicConcatLinear(hk.Linear):
@@ -105,6 +117,7 @@ class StereographicConcatLinear(hk.Linear):
             m_dot(inputs1, w_1, self.k, precision=precision),
             m_dot(inputs2, w_2, self.k, precision=precision),
             self.k,
+            keepdims=True,
         )
 
         if self.with_bias:
@@ -112,4 +125,4 @@ class StereographicConcatLinear(hk.Linear):
             b = jnp.broadcast_to(b, out.shape)
             out = m_bias(b, out, self.k)
 
-        return out
+        return project(out, self.k)
