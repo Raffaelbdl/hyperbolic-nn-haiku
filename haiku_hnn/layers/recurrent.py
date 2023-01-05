@@ -39,8 +39,8 @@ class StereographicVanillaRNN(hk.VanillaRNN):
         )
 
         # arbitrary order for Möbius addition used here
-        out = m_add(hidden_to_hidden(prev_state), input_to_hidden(inputs))
-        out = k_relu(out, self.k)
+        out = m_add(hidden_to_hidden(prev_state), input_to_hidden(inputs), self.k)
+        out = project(k_relu(out, self.k), self.k)
         return out, out
 
 
@@ -72,7 +72,7 @@ class StereographicGRU(hk.GRU):
         if inputs.ndim not in (1, 2):
             raise ValueError("GRU inputs must be rank-1 or rank-2.")
 
-        inputs = expmap0(inputs, self.k)
+        inputs = expmap0(inputs, self.k, use_project=True)
         state = project(state, self.k)
 
         r_input_to_hidden = StereographicLinear(self.hidden_size, self.k)
@@ -122,5 +122,6 @@ class StereographicGRU(hk.GRU):
             m_dot(m_add(-state, h_tilt, self.k), to_diag(z), self.k),
             self.k,
         )
+        state = project(state, self.k)
 
         return state, state
