@@ -4,7 +4,9 @@ import jax
 from haiku_hnn.core.math import arctan_k, tan_k
 
 
-def conformal_factor(x: jnp.ndarray, k: float) -> jnp.ndarray:
+def conformal_factor(
+    x: jnp.ndarray, k: float, axis: int = -1, keepdims: bool = True
+) -> jnp.ndarray:
     """Computes the conformal factor of the K-stereographic model at a given point
 
     Reference:
@@ -14,11 +16,112 @@ def conformal_factor(x: jnp.ndarray, k: float) -> jnp.ndarray:
     Args:
         x (jnp.ndarray): the point where the conformal factor is computed
         k (float): the curvature of the manifold
+
+        axis (int): the axis along which the sum is performed
+        keepdims (bool): if True, the axes which are reduced are left in the result as dimensions with size one
     """
-    return 4 / (1 + k * jnp.sum(jnp.square(x), axis=-1, keepdims=True) + 1e-15)
+    return 2 / (1 + k * jnp.sum(jnp.square(x), axis=axis, keepdims=keepdims) + 1e-15)
 
 
-def m_add(a: jnp.ndarray, b: jnp.ndarray, k: float) -> jnp.ndarray:
+def norm(
+    x: jnp.ndarray, u: jnp.ndarray, k: float, axis: int = -1, keepdims: bool = True
+) -> jnp.ndarray:
+    """Computes the norm in the K-stereographic model
+
+    Reference:
+        Constant Curvature Graph Convolutional Networks
+            (https://arxiv.org/pdf/1911.05076v1.pdf)
+
+    Args:
+        x (jnp.ndarray): the point where the norm is computed
+        k (float): the curvature of the manifold
+
+        axis (int): the axis along which the sum is performed
+        keepdims (bool): if True, the axes which are reduced are left in the result as dimensions with size one
+    """
+    return conformal_factor(x, k, axis, keepdims) * jnp.linalg.norm(
+        u, axis=axis, keepdims=keepdims
+    )
+
+
+def gyration(
+    u: jnp.ndarray,
+    v: jnp.ndarray,
+    w: jnp.ndarray,
+    k: int,
+    axis: int = -1,
+    keepdims: bool = True,
+) -> jnp.ndarray:
+    """Computes the gyration vector of w by [u, v]
+
+    Reference:
+        Constant Curvature Graph Convolutional Networks
+            (https://arxiv.org/pdf/1911.05076v1.pdf)
+
+    Args:
+        u, v, w (jnp.ndarray): the points where gyr[u, v]w is computed
+        k (float): the curvature of the manifold
+
+        axis (int): the axis along which the sum is performed
+        keepdims (bool): if True, the axes which are reduced are left in the result as dimensions with size one
+    """
+    norm_u2 = jnp.sum(jnp.square(u), axis=-1, keepdims=keepdims)
+    norm_v2 = jnp.sum(jnp.square(v), axis=-1, keepdims=keepdims)
+    dot_uv = jnp.sum(u * v, axis=axis, keepdims=keepdims)
+    dot_uw = jnp.sum(u * w, axis=axis, keepdims=keepdims)
+    dot_vw = jnp.sum(v * w, axis=axis, keepdims=keepdims)
+    k2 = jnp.square(k)
+
+    a = -k2 * dot_uw * norm_v2 - k * dot_vw + 2 * k2 * dot_uv * dot_vw
+    b = -k2 * dot_vw * norm_u2 + k * dot_uw
+    d = 1 - 2 * k * dot_uv + k2 * norm_u2 * norm_v2
+    return w + 2 * (a * u + b * v) / (d + 1e-15)
+
+
+def dist(
+    x: jnp.ndarray, y: jnp.ndarray, k: float, axis: int = -1, keepdims: bool = False
+) -> float:
+    """Computes the distance between x and y in the K-stereographic model
+
+    Reference:
+        Constant Curvature Graph Convolutional Networks
+            (https://arxiv.org/pdf/1911.05076v1.pdf)
+
+    Args:
+        x, y (jnp.ndarray): the points between which we want to calculate the distance
+        k (float): the curvature of the manifold
+
+        axis (int): the axis along which the sum is performed
+        keepdims (bool): if True, the axes which are reduced are left in the result as dimensions with size one
+    """
+    return 2 * arctan_k(m_add(-x, y, k, axis, keepdims), k)
+
+
+def dist0(x: jnp.ndarray, k: float, axis: int = -1, keepdims: bool = False) -> float:
+    """Computes the distance between x and the manifold origin
+
+    Reference:
+        Constant Curvature Graph Convolutional Networks
+            (https://arxiv.org/pdf/1911.05076v1.pdf)
+
+    Args:
+        x (jnp.ndarray): the point at which we want to calculate the distance to the origin
+        k (float): the curvature of the manifold
+
+        axis (int): the axis along which the sum is performed
+        keepdims (bool): if True, the axes which are reduced are left in the result as dimensions with size one
+    """
+    return 2 * arctan_k(jnp.linalg.norm(x, axis=axis, keepdims=keepdims), k)
+
+
+def m_add(
+    a: jnp.ndarray,
+    b: jnp.ndarray,
+    k: float,
+    axis: int = -1,
+    keepdims: bool = True,
+    use_project: bool = False,
+) -> jnp.ndarray:
     """Computes the Möbius addition in the K-stereographic model
 
     Reference:
@@ -29,22 +132,33 @@ def m_add(a: jnp.ndarray, b: jnp.ndarray, k: float) -> jnp.ndarray:
         a, b (jnp.ndarray): the first and second arguments for Möbius addition
         k (float): the curvature of the manifold
 
+        axis (int): the axis along which the sum is performed
+        keepdims (bool): if True, the axes which are reduced are left in the result as dimensions with size one
+
     Returns:
         The Möbius addition of a and b in the K-stereographic model
     """
-    norm_a2 = jnp.sum(jnp.square(a), axis=-1, keepdims=True)
-    norm_b2 = jnp.sum(jnp.square(b), axis=-1, keepdims=True)
-    ab = jnp.sum(a * b, axis=-1, keepdims=True)
+    norm_a2 = jnp.sum(jnp.square(a), axis=axis, keepdims=keepdims)
+    norm_b2 = jnp.sum(jnp.square(b), axis=axis, keepdims=keepdims)
+    ab = jnp.sum(a * b, axis=axis, keepdims=keepdims)
 
     numerator = (1 - 2 * k * ab - k * norm_b2) * a
     numerator += (1 + k * norm_a2) * b
 
     denominator = 1 - 2 * k * ab + k**2 * norm_a2 * norm_b2
 
-    return project(numerator / (denominator + 1e-15), k)
+    if use_project:
+        return project(numerator / (denominator + 1e-15), k)
+    return numerator / (denominator + 1e-15)
 
 
-def m_scale(a: jnp.ndarray, s: float, k: float) -> jnp.ndarray:
+def m_scale(
+    a: jnp.ndarray,
+    s: float,
+    k: float,
+    axis: int = -1,
+    use_project: bool = False,
+) -> jnp.ndarray:
     """Compute the Möbius scaling in the K-stereographic model
 
     Reference:
@@ -56,14 +170,24 @@ def m_scale(a: jnp.ndarray, s: float, k: float) -> jnp.ndarray:
         s (jnp.ndarray): the scale of the Möbius scaling
         k (float): the curvature of the manifold
 
+        axis (int): the axis along which the sum is performed
+
     Returns:
         The Möbius scaling of a per s in the K-stereographic model
     """
-    norm_a = jnp.linalg.norm(a, axis=-1, keepdims=True) + 1e-15
-    return project(tan_k(s / arctan_k(norm_a), k) * (a / norm_a), k)
+    norm_a = jnp.linalg.norm(a, axis=axis, keepdims=True) + 1e-15
+    if use_project:
+        return project(tan_k(s * arctan_k(norm_a), k) * (a / norm_a), k)
+    return tan_k(s * arctan_k(norm_a), k) * (a / norm_a)
 
 
-def expmap(x: jnp.ndarray, v: jnp.ndarray, k: float) -> jnp.ndarray:
+def expmap(
+    x: jnp.ndarray,
+    v: jnp.ndarray,
+    k: float,
+    axis: int = -1,
+    use_project: bool = False,
+) -> jnp.ndarray:
     """Computes the exponential mapping in the K-stereographic model
 
     Reference:
@@ -79,20 +203,30 @@ def expmap(x: jnp.ndarray, v: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of v from the tangent plane of x onto the hyperboloid surface
     """
-    # norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
-    norm_v = jnp.sqrt(jnp.sum(jnp.square(v), axis=-1, keepdims=True)) + 1e-15
+    norm_v = jnp.linalg.norm(v, axis=axis, keepdims=True) + 1e-15
+    conf_factor = conformal_factor(x, k, axis=axis, keepdims=True)
 
-    transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * conformal_factor(x, k) * norm_v / 2, k)
+    transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * conf_factor * norm_v / 2, k)
     transformed_v *= v / norm_v
-    return project(m_add(x, transformed_v, k), k)
+
+    if use_project:
+        project(m_add(x, transformed_v, k, axis=axis, keepdims=True), k)
+    return m_add(x, transformed_v, k, axis=axis, keepdims=True)
 
 
-def expmap0(v: jnp.ndarray, k: float) -> jnp.ndarray:
+def expmap0(
+    v: jnp.ndarray,
+    k: float,
+    axis: int = -1,
+    use_project: bool = False,
+) -> jnp.ndarray:
     """Computes the exponential mapping in the K-stereographic model at the origin
 
     Reference:
         Constant Curvature Graph Convolutional Networks
             (https://arxiv.org/pdf/1911.05076v1.pdf)
+        Hyperbolic Neural Networks
+            (http://arxiv.org/abs/1805.09112)
 
     Args:
         v (jnp.ndarray): the point from the tangent plane we want to project on the
@@ -102,16 +236,16 @@ def expmap0(v: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of v from the tangent plane of the origin onto the hyperboloid surface
     """
-    # norm_v = jnp.linalg.norm(v, axis=-1, keepdims=True) + 1e-15
+    # norm_v = safe_norm(v, axis=axis, keepdims=True) # introduce nans in gradients
     v += 1e-15
-    norm_v = jnp.sqrt(jnp.sum(jnp.square(v), axis=-1, keepdims=True))
+    norm_v = jnp.sqrt(jnp.sum(jnp.square(v), axis=axis, keepdims=True))
 
-    transformed_v = tan_k(jnp.sqrt(jnp.abs(k)) * 2 * norm_v, k)
-    transformed_v *= v / norm_v
-    return project(transformed_v, k)
+    if use_project:
+        return project(tan_k(norm_v, k) * (v / norm_v), k)
+    return tan_k(norm_v, k) * (v / norm_v)
 
 
-def logmap(x: jnp.ndarray, y: jnp.ndarray, k: float) -> jnp.ndarray:
+def logmap(x: jnp.ndarray, y: jnp.ndarray, k: float, axis: int = -1) -> jnp.ndarray:
     """Computes the logarithmic mapping in the K-stereographic model
 
     Reference:
@@ -127,16 +261,17 @@ def logmap(x: jnp.ndarray, y: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of y from the hyperboloid surface onto the tangent plane of x
     """
-    mx_madd_y = m_add(-x, y, k)
-    norm_mx_madd_y = jnp.linalg.norm(mx_madd_y, axis=-1, keepdims=True) + 1e-15
+    mx_madd_y = m_add(-x, y, k, axis=axis, keepdims=True)
+    norm_mx_madd_y = jnp.linalg.norm(mx_madd_y, axis=axis, keepdims=True) + 1e-15
+    conf_factor = conformal_factor(x, k, axis=axis, keepdims=True)
 
-    res = 2 * jnp.power(jnp.abs(k), -0.5) / conformal_factor(x, k)
+    res = 2 * jnp.power(jnp.abs(k), -0.5) / conf_factor
     res *= arctan_k(norm_mx_madd_y, k)
     res *= mx_madd_y / norm_mx_madd_y
     return res
 
 
-def logmap0(y: jnp.ndarray, k: float) -> jnp.ndarray:
+def logmap0(y: jnp.ndarray, k: float, axis: int = -1) -> jnp.ndarray:
     """Computes the logarithmic mapping in the K-stereographic model at the origin
 
     Reference:
@@ -151,29 +286,17 @@ def logmap0(y: jnp.ndarray, k: float) -> jnp.ndarray:
     Returns:
         The projection of y from the hyperboloid surface onto the tangent plane of the origin
     """
-    # norm_y = jnp.linalg.norm(y, axis=-1, keepdims=True) + 1e-15
-    norm_y = jnp.sqrt(jnp.sum(jnp.square(y), axis=-1, keepdims=True)) + 1e-6
-    return 0.5 / jnp.sqrt(jnp.abs(k)) * arctan_k(norm_y, k) * (y / norm_y)
+    norm_y = jnp.linalg.norm(y, axis=axis, keepdims=True) + 1e-15
+    return arctan_k(norm_y, k) * (y / norm_y)
 
 
-def dist(x: jnp.ndarray, y: jnp.ndarray, k: float) -> float:
-    """Computes the distance between x and y in the K-stereographic model
-
-    Reference:
-        Constant Curvature Graph Convolutional Networks
-            (https://arxiv.org/pdf/1911.05076v1.pdf)
-
-    Args:
-        x, y (jnp.ndarray): the points between which we want to calculate the distance
-        k (float): the curvature of the manifold
-    """
-    dist_euclid = jnp.linalg.norm(x - y, axis=-1, keepdims=True)
-    dot_xy = jnp.sum(x * y, axis=-1, keepdims=True)
-
-    return 2 * dist_euclid * (1 - k * dist_euclid * (dist_euclid / 3 + dot_xy))
-
-
-def m_dot(x: jnp.ndarray, w: jnp.ndarray, k: float, precision=None) -> jnp.ndarray:
+def m_dot(
+    x: jnp.ndarray,
+    w: jnp.ndarray,
+    k: float,
+    precision=None,
+    use_project: bool = False,
+) -> jnp.ndarray:
     """Computes the dot product between x and w in the K-stereographic model
 
     Reference:
@@ -189,10 +312,17 @@ def m_dot(x: jnp.ndarray, w: jnp.ndarray, k: float, precision=None) -> jnp.ndarr
     Returns:
         The Möbius dot product between x and w in the K-stereographic model
     """
-    return project(expmap0(jnp.dot(logmap0(x, k), w, precision=precision), k), k)
+    if use_project:
+        return project(expmap0(jnp.dot(logmap0(x, k), w, precision=precision), k), k)
+    return expmap0(jnp.dot(logmap0(x, k), w, precision=precision), k)
 
 
-def m_bias(x: jnp.ndarray, b: jnp.ndarray, k: float) -> float:
+def m_bias(
+    x: jnp.ndarray,
+    b: jnp.ndarray,
+    k: float,
+    use_project: bool = False,
+) -> float:
     """Computes the bias translation of x by b in the K-stereographic model
 
     Reference:
@@ -207,11 +337,13 @@ def m_bias(x: jnp.ndarray, b: jnp.ndarray, k: float) -> float:
     Returns:
         The Möbius bias translation of x by b in the K-stereographic model
     """
-    return project(expmap(x, 4 / conformal_factor(x, k) * logmap0(b, k), k), k)
+    if use_project:
+        return project(expmap(x, 2 / conformal_factor(x, k) * logmap0(b, k), k), k)
+    return expmap(x, 2 / conformal_factor(x, k) * logmap0(b, k), k)
 
 
 def parallel_transport(
-    x: jnp.ndarray, y: jnp.ndarray, v: jnp.ndarray, k: float
+    x: jnp.ndarray, y: jnp.ndarray, v: jnp.ndarray, k: float, axis: int = -1
 ) -> jnp.ndarray:
     """Computes the parallel transport between two tangent spaces
 
@@ -228,26 +360,7 @@ def parallel_transport(
     Returns:
         The point v after parallel transport from tangent space of x to y
     """
-    return gyration(y, -x, v) * conformal_factor(x, k) / conformal_factor(y, k)
-
-
-def gyration(u, v, w):
-    """Computes the gyration vector"""
-    norm_u2 = jnp.sum(jnp.square(u), axis=-1, keepdims=True)
-    norm_v2 = jnp.sum(jnp.square(v), axis=-1, keepdims=True)
-    dot_uv = jnp.sum(u * v, axis=-1, keepdims=True)
-    dot_uw = jnp.sum(u * w, axis=-1, keepdims=True)
-    dot_vw = jnp.sum(v * w, axis=-1, keepdims=True)
-
-    a = -dot_uw * norm_v2 - dot_vw + 2 * dot_uv * dot_vw
-    b = -dot_vw * norm_u2 + dot_uw
-    d = 1 - 2 * dot_uv + norm_u2 * norm_v2
-    return w + 2 * (a * u + b * v) / (d + 1e-15)
-
-
-def norm(x: jnp.ndarray, u: jnp.ndarray, k: float) -> jnp.ndarray:
-    """Computes the norm in the K-stereographic model"""
-    return conformal_factor(x, k) * jnp.linalg.norm(u, axis=-1, keepdims=True)
+    return gyration(y, -x, v, k, axis) * conformal_factor(x, k) / conformal_factor(y, k)
 
 
 def project(x: jnp.ndarray, k: float, eps: float = 4e-3) -> jnp.ndarray:
@@ -262,7 +375,9 @@ def project(x: jnp.ndarray, k: float, eps: float = 4e-3) -> jnp.ndarray:
         k (float): the curvature of the manifold
         eps (float): distance to the edge of the manifold
     """
-    max_norm = (1 - eps) * jnp.power(jnp.abs(k), -0.5)
-    norm = jnp.linalg.norm(x, axis=-1, keepdims=True) + 1e-15
+    max_norm = (1 - eps) / jnp.power(jnp.abs(k), 0.5)
+    # norm = jnp.linalg.norm(x, axis=-1, keepdims=True) + 1e-15
+    norm = jnp.sum(jnp.square(x), axis=-1, keepdims=True) + 1e-15
+
     cond = norm > max_norm
     return jnp.where(cond, 1 / norm * max_norm, 1.0) * x

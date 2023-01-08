@@ -1,11 +1,11 @@
 from jax import numpy as jnp
 
 
-def tanh(x):
+def safe_tanh(x: jnp.ndarray) -> jnp.ndarray:
     return jnp.tanh(jnp.clip(x, -15, 15))
 
 
-def arctanh(x):
+def safe_arctanh(x: jnp.ndarray) -> jnp.ndarray:
     return jnp.arctanh(jnp.clip(x, -1 + 1e-7, 1 - 1e-7))
 
 
@@ -21,11 +21,11 @@ def tan_k(x: jnp.ndarray, k: float) -> jnp.ndarray:
         k (float): the curvature of the manifold
     """
     if k > 0:
-        return jnp.power(jnp.abs(k), -0.5) * jnp.tan(x)
+        return jnp.power(k, -0.5) * jnp.tan(x)
     elif k < 0:
-        return jnp.power(jnp.abs(k), -0.5) * tanh(x)
+        return jnp.power(-k, -0.5) * safe_tanh(x)
     else:
-        raise NotImplementedError("K = 0 is not implemented")
+        return jnp.tan(x)
 
 
 def arctan_k(y: jnp.ndarray, k: float) -> jnp.ndarray:
@@ -40,8 +40,8 @@ def arctan_k(y: jnp.ndarray, k: float) -> jnp.ndarray:
         k (float): the curvature of the manifold
     """
     if k > 0:
-        return jnp.arctan(jnp.sqrt(jnp.abs(k)) * y)
+        return jnp.arctan(jnp.sqrt(k) * y)
     elif k < 0:
-        return arctanh(jnp.sqrt(jnp.abs(k)) * y)
+        return safe_arctanh(jnp.sqrt(-k) * y)
     else:
-        raise NotImplementedError("K = 0 is not implemented")
+        return jnp.arctan(y)

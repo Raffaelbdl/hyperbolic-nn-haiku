@@ -2,6 +2,7 @@ from haiku_hnn.core.stereographic import expmap0, logmap0
 
 # import layers
 from haiku_hnn.layers.linear import StereographicLinear
+from haiku_hnn.layers.linear import StereographicConcatLinear
 from haiku_hnn.layers.recurrent import StereographicVanillaRNN
 from haiku_hnn.layers.recurrent import StereographicGRU
 

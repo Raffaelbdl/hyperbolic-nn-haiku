@@ -169,7 +169,7 @@ def riemannian_scale_by_adam(
     def update_fn(updates, state: ScaleByRAdamState, params):
         mu = optax.update_moment(updates, state.tau, b1, 1)
         square_norm_updates = jax.tree_util.tree_map(
-            lambda g, p: norm(p, g, k) ** 2, updates, params
+            lambda g, p: norm(p, g, k, -1, True) ** 2, updates, params
         )
         nu = optax.update_moment(square_norm_updates, state.nu, b2, 2)
         count_inc = optax.safe_int32_increment(state.count)
@@ -218,7 +218,10 @@ def riemannian_scale_by_rss(
 
     def update_fn(updates, state: optax.ScaleByRssState, params):
         sum_of_squares = jax.tree_util.tree_map(
-            lambda g, t, p: norm(p, g, k) + t, updates, state.sum_of_squares, params
+            lambda g, t, p: norm(p, g, k, -1, True) + t,
+            updates,
+            state.sum_of_squares,
+            params,
         )
         inv_sqrt_g_square = jax.tree_util.tree_map(
             lambda t: jnp.where(t > 0, jax.lax.rsqrt(t + eps), 0.0), sum_of_squares
