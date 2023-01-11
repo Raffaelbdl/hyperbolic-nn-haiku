@@ -5,8 +5,8 @@ import jax
 from jax import nn
 from jax import numpy as jnp
 
+from haiku_hnn.core.manifolds.stereographic import Stereographic
 from haiku_hnn.core.activation import k_relu, k_tanh, k_fn
-from haiku_hnn.core.stereographic import expmap0, m_add, m_dot, project
 from haiku_hnn.layers.linear import StereographicLinear
 
 
@@ -29,7 +29,8 @@ class StereographicVanillaRNN(hk.VanillaRNN):
         name: Optional[str] = None,
     ):
         super().__init__(hidden_size, double_bias, name)
-        self.k = k
+        self.manifold = Stereographic(k)
+        self.k = self.manifold.k
 
     def __call__(self, inputs, prev_state):
         """Computes a hyperbolic rnn transform of the input and the previous state"""
@@ -39,8 +40,10 @@ class StereographicVanillaRNN(hk.VanillaRNN):
         )
 
         # arbitrary order for Möbius addition used here
-        out = m_add(hidden_to_hidden(prev_state), input_to_hidden(inputs), self.k)
-        out = project(k_relu(out, self.k), self.k)
+        out = self.manifold._mobius_add(
+            hidden_to_hidden(prev_state), input_to_hidden(inputs)
+        )
+        out = k_relu(out, self.manifold)
         return out, out
 
 
@@ -65,15 +68,16 @@ class StereographicGRU(hk.GRU):
         name: Optional[str] = None,
     ):
         super().__init__(hidden_size, w_i_init, w_h_init, b_init, name)
-        self.k = k
+        self.manifold = Stereographic(k)
+        self.k = self.manifold.k
 
     def __call__(self, inputs, state):
         """Computes a hyperbolic gru transform of the input and the previous state"""
         if inputs.ndim not in (1, 2):
             raise ValueError("GRU inputs must be rank-1 or rank-2.")
 
-        inputs = expmap0(inputs, self.k, use_project=True)
-        state = project(state, self.k)
+        inputs = self.manifold.proj(self.manifold.expmap0(inputs), 4e-3)
+        state = self.manifold.proj(state, 4e-3)
 
         r_input_to_hidden = StereographicLinear(self.hidden_size, self.k)
         r_hidden_to_hidden = StereographicLinear(
@@ -84,11 +88,15 @@ class StereographicGRU(hk.GRU):
         z_hidden_to_hidden = StereographicLinear(
             self.hidden_size, self.k, with_bias=False
         )
-        r = m_add(r_hidden_to_hidden(state), r_input_to_hidden(inputs), self.k)
-        r = k_fn(self.k, nn.sigmoid)(r)
+        r = self.manifold._mobius_add(
+            r_hidden_to_hidden(state), r_input_to_hidden(inputs)
+        )
+        r = k_fn(self.manifold, nn.sigmoid)(r)
 
-        z = m_add(z_hidden_to_hidden(state), z_input_to_hidden(inputs), self.k)
-        z = k_fn(self.k, nn.sigmoid)(z)
+        z = self.manifold._mobius_add(
+            z_hidden_to_hidden(state), z_input_to_hidden(inputs)
+        )
+        z = k_fn(self.manifold, nn.sigmoid)(z)
 
         h_tilt_input_to_hidden = StereographicLinear(self.hidden_size, self.k)
         # TOTO Add args in get_parameter
@@ -104,24 +112,25 @@ class StereographicGRU(hk.GRU):
 
         # h_tilt_1 = jnp.matmul(h_tilt_hidden_to_hidden, jax.vmap(to_diag)(r))
         h_tilt_1 = jnp.matmul(h_tilt_hidden_to_hidden, to_diag(r))
-        h_tilt_1 = k_tanh(h_tilt_1, self.k)
-        h_tilt_1 = m_dot(state, h_tilt_1, self.k)
+        h_tilt_1 = k_tanh(h_tilt_1, self.manifold)
+        h_tilt_1 = self.manifold._mobius_dot(state, h_tilt_1)
         # second term of the addition
 
         h_tilt_2 = h_tilt_input_to_hidden(inputs)
 
-        h_tilt = m_add(h_tilt_1, h_tilt_2, self.k)
+        h_tilt = self.manifold._mobius_add(h_tilt_1, h_tilt_2)
         # state = m_add(
         #     state,
         #     m_dot(m_add(-state, h_tilt, self.k), jax.vmap(to_diag)(z), self.k),
         #     self.k,
         # )
 
-        state = m_add(
+        state = self.manifold._mobius_add(
             state,
-            m_dot(m_add(-state, h_tilt, self.k), to_diag(z), self.k),
-            self.k,
+            self.manifold._mobius_dot(
+                self.manifold._mobius_add(-state, h_tilt), to_diag(z)
+            ),
         )
-        state = project(state, self.k)
+        state = self.manifold.proj(state, 4e-3)
 
         return state, state
