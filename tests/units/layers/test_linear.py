@@ -8,17 +8,34 @@ import jax.nn as nn
 import haiku as hk
 
 import haiku_hnn as hknn
-from haiku_hnn.core.stereographic import project
 
 
-def test_linear_k_in_params():
+def test_stereographiclinear_learnables_in_params():
     @hk.transform
     def fwd_fn(x):
         return hknn.StereographicLinear(10, -1, learnable=True, name="test_layer")(x)
 
     key = jax.random.PRNGKey(0)
 
-    x = project(hknn.expmap0(jnp.zeros((100)), -1), -1)
+    manifold = hknn.Stereographic(-1)
+    x = manifold.proj(manifold.expmap0(jnp.zeros((1, 100))), 4e-3)
 
     params = fwd_fn.init(key, x)
     check.is_in("riemannian_k", params["test_layer"].keys())
+
+
+def test_lorentzlinear_learnables_in_params():
+    @hk.transform
+    def fwd_fn(x):
+        return hknn.LorentzLinear(
+            10, -1, 1.0, 1.1, learnable_k=True, learnable_scale=True, name="test_layer"
+        )(x)
+
+    key = jax.random.PRNGKey(0)
+
+    manifold = hknn.Stereographic(-1)
+    x = manifold.proj(manifold.expmap0(jnp.zeros((1, 100))), 4e-3)
+
+    params = fwd_fn.init(key, x)
+    check.is_in("riemannian_k", params["test_layer"].keys())
+    check.is_in("riemannian_scale", params["test_layer"].keys())
