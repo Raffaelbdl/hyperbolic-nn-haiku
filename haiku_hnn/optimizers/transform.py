@@ -9,7 +9,7 @@ from jax import numpy as jnp
 import optax
 from optax._src.utils import canonicalize_dtype, cast_tree
 
-from haiku_hnn.core.stereographic import conformal_factor, parallel_transport, norm
+from haiku_hnn.core.manifolds.base import Manifold
 from haiku_hnn.optimizers.update import apply_riemannian_updates
 
 
@@ -42,7 +42,7 @@ def mixed_optimizer(
     )
 
 
-def riemannian_scale(k: float) -> optax.GradientTransformation:
+def riemannian_scale(manifold: Manifold) -> optax.GradientTransformation:
     """Rescale gradients to riemannian space
 
     References:
@@ -61,7 +61,7 @@ def riemannian_scale(k: float) -> optax.GradientTransformation:
 
     def update_fn(updates, state, params):
         updates = jax.tree_util.tree_map(
-            lambda g, p: g / conformal_factor(p**2, k), updates, params
+            lambda g, p: g / manifold.conformal_factor(p**2), updates, params
         )
         return updates, state
 
@@ -69,7 +69,7 @@ def riemannian_scale(k: float) -> optax.GradientTransformation:
 
 
 def riemannian_trace(
-    k: float,
+    manifold: Manifold,
     decay: float,
     nesterov: bool = False,
     accumulator_dtype: Optional[Any] = None,
@@ -89,7 +89,7 @@ def riemannian_trace(
     Returns:
         A `GradientTransformation` object.
     """
-
+    manifold = manifold
     accumulator_dtype = canonicalize_dtype(accumulator_dtype)
 
     def init_fn(params):
@@ -107,9 +107,9 @@ def riemannian_trace(
             jax.tree_util.tree_map(f, updates, new_trace) if nesterov else new_trace
         )
         # calculate new params for updating purpose only
-        new_params = apply_riemannian_updates(params, updates, k)
+        new_params = apply_riemannian_updates(params, updates)
         new_trace = jax.tree_util.tree_map(
-            lambda p, new_p, new_t: parallel_transport(p, new_p, new_t, k),
+            lambda p, new_p, new_t: manifold.parallel_transport(p, new_p, new_t),
             params,
             new_params,
             new_trace,
