@@ -78,6 +78,10 @@ class Stereographic(Manifold):
     def _mobius_bias(self, u: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
         return self.expmap(u, 2.0 / self.conformal_factor(u) * self.logmap0(b))
 
+    def _mobius_scale(self, u: jnp.ndarray, s: float) -> jnp.ndarray:
+        norm_u = jnp.sqrt(jnp.sum(jnp.square(u), axis=-1, keepdims=True))
+        return self._tan_k(s * self._arctan_k(norm_u)) * u / norm_u
+
     def conformal_factor(self, u: jnp.ndarray) -> jnp.ndarray:
         return 2.0 / (1.0 + self.k * jnp.sum(jnp.square(u), axis=-1, keepdims=True))
 
