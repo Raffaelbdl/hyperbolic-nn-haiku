@@ -6,8 +6,8 @@ from haiku_hnn.core.manifolds.base import Manifold
 class Lorentz(Manifold):
     def inner(self, x: jnp.ndarray, u: jnp.ndarray, keepdims: bool) -> jnp.ndarray:
         xu = x * u
-        time = -jnp.sum(xu[:, :1], axis=-1, keepdims=keepdims)  # B, 1
-        space = jnp.sum(xu[:, 1:], axis=-1, keepdims=keepdims)  # B, n
+        time = -jnp.sum(xu[..., :1], axis=-1, keepdims=keepdims)  # B, 1
+        space = jnp.sum(xu[..., 1:], axis=-1, keepdims=keepdims)  # B, n
         return time + space
 
     def dist(self, x: jnp.ndarray, y: jnp.ndarray, keepdims: bool) -> jnp.ndarray:
@@ -15,7 +15,7 @@ class Lorentz(Manifold):
         return jnp.sqrt(-self.k) * jnp.arccosh(d / self.k)
 
     def inner0(self, u: jnp.ndarray, keepdims: bool) -> jnp.ndarray:
-        time = -jnp.sum(u[:, :1], axis=-1, keepdims=keepdims)
+        time = -jnp.sum(u[..., :1], axis=-1, keepdims=keepdims)
         return time
 
     def expmap(self, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
@@ -39,13 +39,16 @@ class Lorentz(Manifold):
         return self.logmap(x, u)
 
     def proj(self, u: jnp.ndarray, eps: float) -> jnp.ndarray:
-        space = u[:, 1:]
+        space = u[..., 1:]
         time = jnp.sqrt(self.k + jnp.sum(jnp.square(space), axis=-1, keepdims=True))
         return jnp.concatenate([time, space], axis=-1)
 
     def get_origin_like(self, u: jnp.ndarray) -> jnp.ndarray:
         return jnp.concatenate(
-            [jnp.ones_like((u[:, :1]), u.dtype), jnp.zeros_like((u[:, 1:]), u.dtype)],
+            [
+                jnp.ones_like((u[..., :1]), u.dtype),
+                jnp.zeros_like((u[..., 1:]), u.dtype),
+            ],
             axis=-1,
         )
 
@@ -60,3 +63,20 @@ class Lorentz(Manifold):
 
         res = u - nomin / denom * (lmap + rmap)
         return res
+
+    def _mobius_add(self, u: jnp.ndarray, v: jnp.ndarray) -> jnp.ndarray:
+        u2 = jnp.sum(jnp.square(u), axis=-1, keepdims=True)
+        v2 = jnp.sum(jnp.square(v), axis=-1, keepdims=True)
+        uv = jnp.sum(u * v, axis=-1, keepdims=True)
+
+        nomin = (1.0 - 2.0 * self.k * uv - self.k - v2) * u
+        nomin += (1.0 + self.k * u2) * v
+
+        denom = 1.0 - 2.0 * self.k * uv + jnp.square(self.k) * u2 * v2
+
+        return nomin / (denom + 1e-15)
+
+    def _mobius_dot(
+        self, u: jnp.ndarray, w: jnp.ndarray, precision=None
+    ) -> jnp.ndarray:
+        return self.expmap0(jnp.dot(self.logmap0(u), w, precision=precision))

@@ -6,8 +6,9 @@ from jax import nn
 from jax import numpy as jnp
 
 from haiku_hnn.core.manifolds.stereographic import Stereographic
+from haiku_hnn.core.manifolds.lorentz import Lorentz
 from haiku_hnn.core.activation import k_relu, k_tanh, k_fn
-from haiku_hnn.layers.linear import StereographicLinear
+from haiku_hnn.layers.linear import StereographicLinear, LorentzLinear
 
 
 class StereographicVanillaRNN(hk.VanillaRNN):

@@ -136,7 +136,7 @@ class LorentzLinear(hk.Linear):
         scale = get_scalar("scale", self.scale, self.learnable_scale, dtype)
 
         time = (
-            scale * jax.nn.sigmoid(wx[:, :1]) + eps
+            scale * jax.nn.sigmoid(wx[..., :1]) + eps
         )  # should be x @ v + b inside sigmoid
 
         if self.with_bias:
@@ -146,7 +146,7 @@ class LorentzLinear(hk.Linear):
 
         k = self.manifold.k = get_scalar("k", self.manifold.k, self.learnable_k, dtype)
 
-        space = wx[:, 1:]
+        space = wx[..., 1:]
         space = (
             jnp.sqrt(
                 (jnp.square(time) + 1 / k)
