@@ -9,6 +9,7 @@ from haiku_hnn.core.manifolds.stereographic import Stereographic
 from haiku_hnn.core.manifolds.lorentz import Lorentz
 from haiku_hnn.core.activation import k_relu, k_tanh, k_fn
 from haiku_hnn.layers.linear import StereographicLinear, LorentzLinear
+from haiku_hnn.initializers import HyperbolicInitializer
 
 
 class StereographicVanillaRNN(hk.VanillaRNN):
@@ -104,7 +105,9 @@ class StereographicGRU(hk.GRU):
         h_tilt_hidden_to_hidden = hk.get_parameter(
             "riemannian_u",
             [self.hidden_size, self.hidden_size],
-            init=hk.initializers.VarianceScaling(),
+            init=HyperbolicInitializer(
+                hk.initializers.VarianceScaling(), self.manifold
+            ),
         )
 
         # first term of the addition
