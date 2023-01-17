@@ -8,6 +8,7 @@ import numpy as np
 
 from haiku_hnn.core.manifolds.stereographic import Stereographic
 from haiku_hnn.core.manifolds.lorentz import Lorentz
+from haiku_hnn.initializers import HyperbolicInitializer
 
 
 def get_scalar(
@@ -66,7 +67,9 @@ class StereographicLinear(hk.Linear):
         w_init = self.w_init
         if w_init is None:
             stddev = 1.0 / np.sqrt(self.input_size)
-            w_init = hk.initializers.TruncatedNormal(stddev=stddev)
+            w_init = HyperbolicInitializer(
+                hk.initializers.TruncatedNormal(stddev=stddev), self.manifold
+            )
         w = hk.get_parameter(
             "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
@@ -127,7 +130,9 @@ class LorentzLinear(hk.Linear):
         w_init = self.w_init
         if w_init is None:
             stddev = 1.0 / np.sqrt(self.input_size)
-            w_init = hk.initializers.TruncatedNormal(stddev=stddev)
+            w_init = HyperbolicInitializer(
+                hk.initializers.TruncatedNormal(stddev=stddev), self.manifold
+            )
         w = hk.get_parameter(
             "riemannian_w", [input_size, output_size], dtype, init=w_init
         )
