@@ -1,9 +1,23 @@
 import jax.numpy as jnp
+from colorama import Fore
 
 from haiku_hnn.core.manifolds.base import Manifold
 
 
 class Lorentz(Manifold):
+    def __init__(self, k: int = -1) -> None:
+        super().__init__(k)
+        raise NotImplementedError(
+            Fore.RED
+            + "\nThe Lorentz Manifold is not properly implemented due to\n"
+            + "lack of functional theory. Indeed, a lot of nan appear when\n"
+            + "sticking to the theory.\n"
+            + "A prototype is nonetheless available as `_Lorentz` class."
+            + Fore.RESET
+        )
+
+
+class _Lorentz(Manifold):
     def inner(self, x: jnp.ndarray, u: jnp.ndarray, keepdims: bool) -> jnp.ndarray:
         xu = x * u
         time = -jnp.sum(xu[..., :1], axis=-1, keepdims=keepdims)  # B, 1
@@ -30,8 +44,12 @@ class Lorentz(Manifold):
         beta = self.inner(x, u, True)
         d = jnp.arccosh(-beta)
         nomin = u + 1.0 / self.k * beta * x
-        # denom = jnp.sqrt(jnp.square(beta) - 1.0) # said as irrelevant in code, despite being written in paper
-        denom = jnp.sqrt(self.inner(nomin, nomin, True))
+        denom = jnp.sqrt(
+            jnp.square(beta) - 1.0
+        )  # said as irrelevant in code, despite being written in paper
+
+        # denom = jnp.sqrt(self.inner(nomin, nomin, True)) # written in code, despite not working
+
         return d * nomin / denom
 
     def logmap0(self, u: jnp.ndarray) -> jnp.ndarray:
@@ -46,7 +64,7 @@ class Lorentz(Manifold):
     def get_origin_like(self, u: jnp.ndarray) -> jnp.ndarray:
         return jnp.concatenate(
             [
-                jnp.ones_like((u[..., :1]), u.dtype),
+                jnp.sqrt(-1 / self.k) * jnp.ones_like((u[..., :1]), u.dtype),
                 jnp.zeros_like((u[..., 1:]), u.dtype),
             ],
             axis=-1,
@@ -59,7 +77,7 @@ class Lorentz(Manifold):
         rmap = self.logmap(y, x)
 
         nomin = self.inner(x, u, True)
-        denom = jnp.square(self.dist(x, y))
+        denom = jnp.square(self.dist(x, y, True))
 
         res = u - nomin / denom * (lmap + rmap)
         return res
@@ -80,3 +98,13 @@ class Lorentz(Manifold):
         self, u: jnp.ndarray, w: jnp.ndarray, precision=None
     ) -> jnp.ndarray:
         return self.expmap0(jnp.dot(self.logmap0(u), w, precision=precision))
+
+    def conformal_factor(self, u: jnp.ndarray) -> jnp.ndarray:
+        if u.ndim > 0:
+            return 2.0 / (1.0 + self.k * jnp.sum(jnp.square(u), axis=-1, keepdims=True))
+        return 2.0 / (1.0 + self.k * jnp.sum(jnp.square(u), keepdims=True))
+
+    def norm(self, x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
+        if y.ndim > 1:
+            return jnp.sqrt(self.inner(y, y, True)) * self.conformal_factor(x)
+        return jnp.sqrt(y * y) * self.conformal_factor(x)
