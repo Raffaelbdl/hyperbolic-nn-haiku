@@ -60,7 +60,9 @@ def apply_mixed_updates(
 
     def update_fn(p, u, l):
         if "riemannian" == l:
-            return jnp.asarray(manifold.expmap(p, u).astype(jnp.asarray(p).dtype))
+            return manifold.proj(
+                jnp.asarray(manifold.expmap(p, u).astype(jnp.asarray(p).dtype)), 4e-3
+            )
         return jnp.asarray(p + u).astype(jnp.asarray(p).dtype)
 
     return jax.tree_util.tree_map(

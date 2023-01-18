@@ -130,7 +130,7 @@ class ScaleByRAdamState(NamedTuple):
 
 
 def riemannian_scale_by_adam(
-    k: float,
+    manifold: Manifold,
     b1: float = 0.9,
     b2: float = 0.999,
     eps: float = 1e-8,
@@ -169,7 +169,7 @@ def riemannian_scale_by_adam(
     def update_fn(updates, state: ScaleByRAdamState, params):
         mu = optax.update_moment(updates, state.tau, b1, 1)
         square_norm_updates = jax.tree_util.tree_map(
-            lambda g, p: norm(p, g, k, -1, True) ** 2, updates, params
+            lambda g, p: manifold.norm(p, g) ** 2, updates, params
         )
         nu = optax.update_moment(square_norm_updates, state.nu, b2, 2)
         count_inc = optax.safe_int32_increment(state.count)
@@ -180,9 +180,9 @@ def riemannian_scale_by_adam(
         )
         mu = cast_tree(mu, mu_dtype)
 
-        new_params = apply_riemannian_updates(params, updates, k)
+        new_params = apply_riemannian_updates(params, updates, manifold)
         tau = jax.tree_util.tree_map(
-            lambda p, new_p, m: parallel_transport(p, new_p, m, k),
+            lambda p, new_p, m: manifold.parallel_transport(p, new_p, m),
             params,
             new_params,
             mu,
@@ -194,7 +194,7 @@ def riemannian_scale_by_adam(
 
 
 def riemannian_scale_by_rss(
-    k: float, initial_accumulator_value: float = 0.1, eps: float = 1e-7
+    manifold: Manifold, initial_accumulator_value: float = 0.1, eps: float = 1e-7
 ) -> optax.GradientTransformation:
     """Rescale updates by the root of the sum of all squared gradients norms to date.
 
@@ -218,7 +218,7 @@ def riemannian_scale_by_rss(
 
     def update_fn(updates, state: optax.ScaleByRssState, params):
         sum_of_squares = jax.tree_util.tree_map(
-            lambda g, t, p: norm(p, g, k, -1, True) + t,
+            lambda g, t, p: manifold.norm(p, g) + t,
             updates,
             state.sum_of_squares,
             params,
@@ -230,5 +230,17 @@ def riemannian_scale_by_rss(
             lambda scale, g: scale * g, inv_sqrt_g_square, updates
         )
         return updates, optax.ScaleByRssState(sum_of_squares=sum_of_squares)
+
+    return optax.GradientTransformation(init_fn, update_fn)
+
+
+def project(manifold: Manifold, eps: float = 4e-3) -> optax.GradientTransformation:
+    def init_fn(params):
+        del params
+        return optax.EmptyState()
+
+    def update_fn(updates, state: optax.EmptyState(), params):
+        updates = jax.tree_map(lambda u: manifold.proj(u, eps), updates)
+        return updates, state
 
     return optax.GradientTransformation(init_fn, update_fn)
