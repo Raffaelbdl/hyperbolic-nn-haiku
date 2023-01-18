@@ -94,8 +94,8 @@ class LorentzLinear(hk.Linear):
     def __init__(
         self,
         output_size: int,
-        k: float,  # should be made learnable
-        scale: float,  # should be made learnable
+        k: float,
+        scale: float,
         eps: float,
         with_bias: bool = True,
         w_init: Optional[hk.initializers.Initializer] = None,
@@ -148,7 +148,6 @@ class LorentzLinear(hk.Linear):
             b = hk.get_parameter("riemannian_b", [output_size], dtype, init=self.b_init)
             b = jnp.broadcast_to(b, wx.shape)
             wx = wx + b
-
         k = self.manifold.k = get_scalar("k", self.manifold.k, self.learnable_k, dtype)
 
         space = wx[..., 1:]
@@ -160,4 +159,4 @@ class LorentzLinear(hk.Linear):
             * space
         )
 
-        return jnp.concatenate([time, space], axis=-1)
+        return self.manifold.proj(jnp.concatenate([time, space], axis=-1), 4e-3)
