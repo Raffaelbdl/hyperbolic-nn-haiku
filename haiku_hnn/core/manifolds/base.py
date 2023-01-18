@@ -36,3 +36,6 @@ class Manifold:
         self, x: jnp.ndarray, y: jnp.ndarray, u: jnp.ndarray
     ) -> jnp.ndarray:
         raise NotImplementedError()
+
+    def norm(self, x: jnp.ndarray) -> jnp.ndarray:
+        raise NotImplementedError()
