@@ -34,7 +34,7 @@ def apply_riemannian_updates(
         params (Params): a tree of parameters
         updates (Updates): a tree of updates, the tree structure and the shape of the leaf
         nodes must match that of `params`
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
     """
     return jax.tree_util.tree_map(
         lambda p, u: jnp.asarray(manifold.expmap(p, u).astype(jnp.asarray(p).dtype)),
@@ -55,7 +55,7 @@ def apply_mixed_updates(
         params (Params): a tree of parameters
         updates (Updates): a tree of updates, the tree structure and the shape of the leaf
         nodes must match that of `params`
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
     """
 
     def update_fn(p, u, l):

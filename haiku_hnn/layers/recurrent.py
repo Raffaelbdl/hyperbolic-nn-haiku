@@ -1,14 +1,12 @@
 from typing import Optional
 
 import haiku as hk
-import jax
 from jax import nn
 from jax import numpy as jnp
 
 from haiku_hnn.core.manifolds.stereographic import Stereographic
-from haiku_hnn.core.manifolds.lorentz import Lorentz
 from haiku_hnn.core.activation import k_relu, k_tanh, k_fn
-from haiku_hnn.layers.linear import StereographicLinear, LorentzLinear
+from haiku_hnn.layers.linear import StereographicLinear
 from haiku_hnn.initializers import HyperbolicInitializer
 
 
@@ -17,10 +15,6 @@ class StereographicVanillaRNN(hk.VanillaRNN):
 
     References:
         Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
-
-    # TODO Change Attribute section
-    Non-inherited attributes:
-        k (float): the curvature of the manifold
     """
 
     def __init__(
@@ -54,10 +48,6 @@ class StereographicGRU(hk.GRU):
 
     References:
         Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
-
-    # TODO Change Attribute section
-    Non-inherited attributes:
-        k (float): the curvature of the manifold
     """
 
     def __init__(
