@@ -8,7 +8,6 @@ import jax.nn as nn
 import haiku as hk
 
 import haiku_hnn as hknn
-from haiku_hnn.core.stereographic import project
 from tests.gradients.utils import is_nan_in_pytree
 
 
@@ -19,8 +18,9 @@ def test_nan_stereographic_vanilla_rnn():
 
     key = jax.random.PRNGKey(0)
 
-    x = project(hknn.expmap0(jnp.zeros((100)), -1), -1)
-    h = project(hknn.expmap0(jnp.zeros((10)), -1), -1)
+    manifold = hknn.Stereographic(-1)
+    x = manifold.proj(manifold.expmap0(jnp.zeros((1, 100))), 4e-3)
+    h = manifold.proj(manifold.expmap0(jnp.zeros((10))), 4e-3)
 
     params = fwd_fn.init(key, x, h)
 
@@ -28,7 +28,7 @@ def test_nan_stereographic_vanilla_rnn():
         pred, h = fwd_fn.apply(params, key, x, h)
         return jnp.mean(jnp.sum(jnp.square(pred - y)))
 
-    y = jnp.ones((10))
+    y = jnp.ones((1, 10))
     l, g = jax.value_and_grad(loss_fn)(params, x, h, y)
 
     check.is_false(is_nan_in_pytree(g))
@@ -41,8 +41,9 @@ def test_nan_stereographic_gru():
 
     key = jax.random.PRNGKey(0)
 
-    x = project(hknn.expmap0(jnp.zeros((100)), -1), -1)
-    h = project(hknn.expmap0(jnp.zeros((10)), -1), -1)
+    manifold = hknn.Stereographic(-1)
+    x = manifold.proj(manifold.expmap0(jnp.zeros((1, 100))), 4e-3)[0]
+    h = manifold.proj(manifold.expmap0(jnp.zeros((10))), 4e-3)
 
     params = fwd_fn.init(key, x, h)
 

@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 import optax
 
-from haiku_hnn.core.stereographic import expmap
+from haiku_hnn.core.manifolds.base import Manifold
 
 
 def map_nested_fn(fn):
@@ -23,7 +23,7 @@ label_riemannian_fn = map_nested_fn(
 
 
 def apply_riemannian_updates(
-    params: optax.Params, updates: optax.Updates, k: float
+    params: optax.Params, updates: optax.Updates, manifold: Manifold
 ) -> optax.Params:
     """Applies an riemannian update to the corresponding parameters
 
@@ -37,14 +37,14 @@ def apply_riemannian_updates(
         k (float): the curvature of the manifold
     """
     return jax.tree_util.tree_map(
-        lambda p, u: jnp.asarray(expmap(p, u, k).astype(jnp.asarray(p).dtype)),
+        lambda p, u: jnp.asarray(manifold.expmap(p, u).astype(jnp.asarray(p).dtype)),
         params,
         updates,
     )
 
 
 def apply_mixed_updates(
-    params: optax.Params, updates: optax.Updates, k: float
+    params: optax.Params, updates: optax.Updates, manifold: Manifold
 ) -> optax.Params:
     """Applies an update to the corresponding riemannian & euclidian parameters
 
@@ -60,7 +60,9 @@ def apply_mixed_updates(
 
     def update_fn(p, u, l):
         if "riemannian" == l:
-            return jnp.asarray(expmap(p, u, k).astype(jnp.asarray(p).dtype))
+            return manifold.proj(
+                jnp.asarray(manifold.expmap(p, u).astype(jnp.asarray(p).dtype)), 4e-3
+            )
         return jnp.asarray(p + u).astype(jnp.asarray(p).dtype)
 
     return jax.tree_util.tree_map(

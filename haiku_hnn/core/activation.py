@@ -3,10 +3,11 @@ from typing import Callable
 from jax import nn
 from jax import numpy as jnp
 
-from haiku_hnn.core.stereographic import expmap0, logmap0
+from haiku_hnn.core.manifolds.base import Manifold
+from haiku_hnn.core.manifolds.stereographic import Stereographic
 
 
-def k_fn(k: float, fn: Callable) -> Callable:
+def k_fn(manifold: Manifold, fn: Callable) -> Callable:
     """Wraps a function to make it compatible in the K-stereographic model
 
     The given function should have:
@@ -20,15 +21,20 @@ def k_fn(k: float, fn: Callable) -> Callable:
         k (float): the curvature of the manifold
         fn (Callable): the function to wrap
     """
-    if k == 0:
+    if manifold.k == 0:
         return fn
 
+    if isinstance(manifold, Stereographic):
+        eps = 4e-3
+    else:
+        eps = 0.0
+
     def wrapper(x: jnp.ndarray, **kwargs):
-        return expmap0(fn(logmap0(x, k), **kwargs), k)
+        return manifold.proj(manifold.expmap0(fn(manifold.logmap0(x), **kwargs)), eps)
 
     return wrapper
 
 
-k_relu = lambda x, k, **kwargs: k_fn(k, nn.relu)(x, **kwargs)
-k_softmax = lambda x, k, **kwargs: k_fn(k, nn.softmax)(x, **kwargs)
-k_tanh = lambda x, k, **kwargs: k_fn(k, nn.tanh)(x, **kwargs)
+k_relu = lambda x, manifold, **kwargs: k_fn(manifold, nn.relu)(x, **kwargs)
+k_softmax = lambda x, manifold, **kwargs: k_fn(manifold, nn.softmax)(x, **kwargs)
+k_tanh = lambda x, manifold, **kwargs: k_fn(manifold, nn.tanh)(x, **kwargs)

@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 import optax
 
 from haiku_hnn.optimizers import transform
+from haiku_hnn.core.manifolds.base import Manifold
 
 ScalarOrSchedule = Union[float, optax.Schedule]
 
@@ -17,7 +18,7 @@ def _scale_by_learning_rate(learning_rate: ScalarOrSchedule, flip_sign=True):
 
 
 def rsgd(
-    k: float,
+    manifold: Manifold,
     learning_rate: ScalarOrSchedule,
 ) -> optax.GradientTransformation:
     """Riemannian Stochastic Gradient Descent optimizer
@@ -34,13 +35,13 @@ def rsgd(
     """
 
     return optax.chain(
-        transform.riemannian_scale(k=k),
+        transform.riemannian_scale(manifold),
         _scale_by_learning_rate(learning_rate),
     )
 
 
 def riemannian_adagrad(
-    k: float,
+    manifold: Manifold,
     learning_rate: ScalarOrSchedule,
     initial_accumulator_value: float = 0.1,
     eps: float = 1e-7,
@@ -62,14 +63,14 @@ def riemannian_adagrad(
 
     """
     return optax.chain(
-        transform.riemannian_scale(k=k),
-        transform.riemannian_scale_by_rss(k, initial_accumulator_value, eps),
+        transform.riemannian_scale(manifold=manifold),
+        transform.riemannian_scale_by_rss(manifold, initial_accumulator_value, eps),
         _scale_by_learning_rate(learning_rate),
     )
 
 
 def riemannian_adam(
-    k: float,
+    manifold: Manifold,
     learning_rate: ScalarOrSchedule,
     b1: float = 0.9,
     b2: float = 0.999,
@@ -99,9 +100,9 @@ def riemannian_adam(
         The corresponding `GradientTransformation`.
     """
     return optax.chain(
-        transform.riemannian_scale(k),
+        transform.riemannian_scale(manifold),
         transform.riemannian_scale_by_adam(
-            k=k, b1=b1, b2=b2, eps=eps, eps_root=eps_root, mu_dtype=mu_dtype
+            manifold, b1=b1, b2=b2, eps=eps, eps_root=eps_root, mu_dtype=mu_dtype
         ),
         _scale_by_learning_rate(learning_rate),
     )
