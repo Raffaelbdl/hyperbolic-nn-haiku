@@ -27,7 +27,7 @@ def rsgd(
         [Bonnabe, 2013](https://arxiv.org/abs/1111.5280)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         learning_rate (ScalarOrSchedule): a fixed global scaling factor
 
     Returns:
@@ -52,7 +52,7 @@ def riemannian_adagrad(
         [Bécigneul and Ganea, 2019](http://arxiv.org/abs/1810.00760)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         learning_rate: a fixed global scaling factor.
         initial_accumulator_value: initial value for the accumulator.
         eps: a small constant applied to denominator inside of the square root
@@ -84,7 +84,7 @@ def riemannian_adam(
         [Bécigneul and Ganea, 2019](http://arxiv.org/abs/1810.00760)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         learning_rate: a fixed global scaling factor.
         b1: exponential decay rate to track the first moment of past gradients.
         b2: exponential decay rate to track the second moment of past gradients.
@@ -109,7 +109,7 @@ def riemannian_adam(
 
 
 def riemannian_adamw(
-    k: float,
+    manifold: Manifold,
     learning_rate: ScalarOrSchedule,
     b1: float = 0.9,
     b2: float = 0.999,
@@ -120,9 +120,14 @@ def riemannian_adamw(
     mask=None,
 ) -> optax.GradientTransformation:
     return optax.chain(
-        transform.riemannian_scale(k),
+        transform.riemannian_scale(manifold),
         transform.riemannian_scale_by_adam(
-            k=k, b1=b1, b2=b2, eps=eps, eps_root=eps_root, mu_dtype=mu_dtype
+            manifold=manifold,
+            b1=b1,
+            b2=b2,
+            eps=eps,
+            eps_root=eps_root,
+            mu_dtype=mu_dtype,
         ),
         optax.add_decayed_weights(weight_decay, mask),
         _scale_by_learning_rate(learning_rate),

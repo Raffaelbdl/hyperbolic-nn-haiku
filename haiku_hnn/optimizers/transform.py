@@ -49,7 +49,7 @@ def riemannian_scale(manifold: Manifold) -> optax.GradientTransformation:
         [Bécigneul and Ganea, 2019](http://arxiv.org/abs/1810.00760)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
 
     Returns:
         A `GradientTransformation` object.
@@ -80,7 +80,7 @@ def riemannian_trace(
         [Bonnabel, 2013](https://arxiv.org/abs/1111.5280)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         decay (float): Decay rate for the trace of past updates.
         nesterov (bool): Whether to use Nesterov momentum.
         accumulator_dtype: Optional `dtype` to be used for the accumulator; if
@@ -143,7 +143,7 @@ def riemannian_scale_by_adam(
         [Bécigneul and Ganea, 2019](http://arxiv.org/abs/1810.00760)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         b1 (float): decay rate for the exponentially weighted average of grads.
         b2 (float): decay rate for the exponentially weighted average of squared grads.
         eps (float): term added to the denominator to improve numerical stability.
@@ -202,7 +202,7 @@ def riemannian_scale_by_rss(
         [Bécigneul and Ganea, 2019](http://arxiv.org/abs/1810.00760)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         initial_accumulator_value (float): Starting value for accumulators, must be >= 0.
         eps (float): A small floating point value to avoid zero denominator.
 
@@ -235,6 +235,8 @@ def riemannian_scale_by_rss(
 
 
 def project(manifold: Manifold, eps: float = 4e-3) -> optax.GradientTransformation:
+    """A gradient transformation that projects values on the current manifold"""
+
     def init_fn(params):
         del params
         return optax.EmptyState()

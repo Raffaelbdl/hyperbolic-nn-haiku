@@ -6,6 +6,8 @@ from haiku_hnn.core.manifolds.base import Manifold
 
 
 class HyperbolicInitializer(hk.initializers.Initializer):
+    """Transforms a hk.Initializer into a Hyperbolic Initializer"""
+
     def __init__(
         self, initializer: hk.initializers.Initializer, manifold: Manifold, **args
     ):

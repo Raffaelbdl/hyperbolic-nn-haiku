@@ -7,7 +7,7 @@ from haiku_hnn.core.manifolds.base import Manifold
 from haiku_hnn.core.manifolds.stereographic import Stereographic
 
 
-def k_fn(manifold: Manifold, fn: Callable) -> Callable:
+def r_fn(manifold: Manifold, fn: Callable) -> Callable:
     """Wraps a function to make it compatible in the K-stereographic model
 
     The given function should have:
@@ -18,7 +18,7 @@ def k_fn(manifold: Manifold, fn: Callable) -> Callable:
         Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
 
     Args:
-        k (float): the curvature of the manifold
+        manifold (Manifold): the manifold
         fn (Callable): the function to wrap
     """
     if manifold.k == 0:
@@ -35,6 +35,6 @@ def k_fn(manifold: Manifold, fn: Callable) -> Callable:
     return wrapper
 
 
-k_relu = lambda x, manifold, **kwargs: k_fn(manifold, nn.relu)(x, **kwargs)
-k_softmax = lambda x, manifold, **kwargs: k_fn(manifold, nn.softmax)(x, **kwargs)
-k_tanh = lambda x, manifold, **kwargs: k_fn(manifold, nn.tanh)(x, **kwargs)
+r_relu = lambda x, manifold, **kwargs: r_fn(manifold, nn.relu)(x, **kwargs)
+r_softmax = lambda x, manifold, **kwargs: r_fn(manifold, nn.softmax)(x, **kwargs)
+r_tanh = lambda x, manifold, **kwargs: r_fn(manifold, nn.tanh)(x, **kwargs)

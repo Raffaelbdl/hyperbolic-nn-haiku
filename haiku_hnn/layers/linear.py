@@ -14,6 +14,11 @@ from haiku_hnn.initializers import HyperbolicInitializer
 def get_scalar(
     name: str, value: float, is_learnable: bool, dtype: jnp.dtype
 ) -> jnp.ndarray:
+    """Returns a scalar inside hk.transform
+
+    If the scalar is not supposed to be learned, it will return its default value.
+    Otherwise the scalar will be added to the parameters to be optimized
+    """
     if is_learnable:
         return hk.get_parameter(
             f"riemannian_{name}", [], dtype, lambda *args: jnp.array(value, dtype)
@@ -28,10 +33,6 @@ class StereographicLinear(hk.Linear):
         Hyperbolic Neural Networks (http://arxiv.org/abs/1805.09112)
         Constant Curvature Graph Convolutional Networks
             (https://arxiv.org/pdf/1911.05076v1.pdf)
-
-    # TODO Change Attribute section
-    Non-inherited attributes:
-        k (float): the curvature of the manifold
     """
 
     def __init__(
