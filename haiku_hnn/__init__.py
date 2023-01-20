@@ -20,4 +20,3 @@ from haiku_hnn.core.activation import r_fn
 
 # import manifold
 from haiku_hnn.core.manifolds.stereographic import Stereographic
-from haiku_hnn.core.manifolds.lorentz import Lorentz

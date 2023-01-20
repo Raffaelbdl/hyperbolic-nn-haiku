@@ -3,9 +3,8 @@ import os
 import imageio
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
 
-from haiku_hnn.core.manifolds.stereographic import Stereographic
+from haiku_hnn import Stereographic
 
 
 def visualize_stereographic_manifold(

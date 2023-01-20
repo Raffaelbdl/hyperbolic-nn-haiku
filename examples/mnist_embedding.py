@@ -16,10 +16,7 @@ from sklearn.decomposition import PCA
 import tensorflow as tf
 from tqdm import tqdm
 
-from haiku_hnn.core.activation import r_relu
-from haiku_hnn.core.manifolds.base import Manifold
-from haiku_hnn.core.manifolds.stereographic import Stereographic
-from haiku_hnn.core.manifolds.lorentz import Lorentz
+from haiku_hnn import r_relu, Stereographic
 
 jax.config.update("jax_enable_x64", True)
 
@@ -201,7 +198,7 @@ def apply_updates(
     params: hk.Params,
     opt_state: optax.OptState,
     grads,
-    manifold: Manifold,
+    manifold: Stereographic,
 ):
     updates, opt_state = optimizer.update(grads, opt_state, params)
     params = hkhn.apply_mixed_updates(params, updates, manifold)
