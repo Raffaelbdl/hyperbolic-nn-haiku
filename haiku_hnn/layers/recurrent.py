@@ -5,7 +5,7 @@ from jax import nn
 from jax import numpy as jnp
 
 from haiku_hnn.core.manifolds.stereographic import Stereographic
-from haiku_hnn.core.activation import k_relu, k_tanh, k_fn
+from haiku_hnn.core.activation import r_relu, r_tanh, r_fn
 from haiku_hnn.layers.linear import StereographicLinear
 from haiku_hnn.initializers import HyperbolicInitializer
 
@@ -39,7 +39,7 @@ class StereographicVanillaRNN(hk.VanillaRNN):
         out = self.manifold._mobius_add(
             hidden_to_hidden(prev_state), input_to_hidden(inputs)
         )
-        out = k_relu(out, self.manifold)
+        out = r_relu(out, self.manifold)
         return out, out
 
 
@@ -83,12 +83,12 @@ class StereographicGRU(hk.GRU):
         r = self.manifold._mobius_add(
             r_hidden_to_hidden(state), r_input_to_hidden(inputs)
         )
-        r = k_fn(self.manifold, nn.sigmoid)(r)
+        r = r_fn(self.manifold, nn.sigmoid)(r)
 
         z = self.manifold._mobius_add(
             z_hidden_to_hidden(state), z_input_to_hidden(inputs)
         )
-        z = k_fn(self.manifold, nn.sigmoid)(z)
+        z = r_fn(self.manifold, nn.sigmoid)(z)
 
         h_tilt_input_to_hidden = StereographicLinear(self.hidden_size, self.k)
         # TOTO Add args in get_parameter
@@ -106,7 +106,7 @@ class StereographicGRU(hk.GRU):
 
         # h_tilt_1 = jnp.matmul(h_tilt_hidden_to_hidden, jax.vmap(to_diag)(r))
         h_tilt_1 = jnp.matmul(h_tilt_hidden_to_hidden, to_diag(r))
-        h_tilt_1 = k_tanh(h_tilt_1, self.manifold)
+        h_tilt_1 = r_tanh(h_tilt_1, self.manifold)
         h_tilt_1 = self.manifold._mobius_dot(state, h_tilt_1)
         # second term of the addition
 

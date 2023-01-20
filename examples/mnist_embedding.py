@@ -16,7 +16,7 @@ from sklearn.decomposition import PCA
 import tensorflow as tf
 from tqdm import tqdm
 
-from haiku_hnn.core.activation import k_relu
+from haiku_hnn.core.activation import r_relu
 from haiku_hnn.core.manifolds.base import Manifold
 from haiku_hnn.core.manifolds.stereographic import Stereographic
 from haiku_hnn.core.manifolds.lorentz import Lorentz
@@ -100,9 +100,9 @@ def make_stereo_transform() -> hk.Transformed:
             hk.Flatten(),
             manifold.expmap0,
             hkhn.StereographicLinear(32, k),
-            partial(k_relu, manifold=manifold),
+            partial(r_relu, manifold=manifold),
             hkhn.StereographicLinear(32, k),
-            partial(k_relu, manifold=manifold),
+            partial(r_relu, manifold=manifold),
             hkhn.StereographicLinear(10, k),
         ]
         for i, l in enumerate(layers):
@@ -124,7 +124,7 @@ def make_trunc_stereo_transform() -> hk.Transformed:
             hk.Flatten(),
             manifold.expmap0,
             hkhn.StereographicLinear(32, k),
-            partial(k_relu, manifold=manifold),
+            partial(r_relu, manifold=manifold),
             hkhn.StereographicLinear(32, k),
         ]
         for i, l in enumerate(layers):
@@ -146,7 +146,7 @@ def make_hyb_stereo_transform() -> hk.Transformed:
             hk.Flatten(),
             manifold.expmap0,
             hkhn.StereographicLinear(32, k),
-            partial(k_relu, manifold=manifold),
+            partial(r_relu, manifold=manifold),
             hkhn.StereographicLinear(32, k),
             manifold.logmap0,
             nn.relu,
@@ -171,7 +171,7 @@ def make_trunc_hyb_stereo_transform() -> hk.Transformed:
             hk.Flatten(),
             manifold.expmap0,
             hkhn.StereographicLinear(32, k),
-            partial(k_relu, manifold=manifold),
+            partial(r_relu, manifold=manifold),
             hkhn.StereographicLinear(32, k),
         ]
         for i, l in enumerate(layers):
