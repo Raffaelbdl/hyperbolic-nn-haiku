@@ -55,14 +55,3 @@ For fully hyperbolic architecture :
 For hybrid architecture :
 ![](./resources/val_hhyb_emb_lr_0.1.png)
 
-## Citing 
-
-```bibtex
-@software{hnn_haiku2022bolladilorenzo,
-    title = {Hyperbolic Neural Networks with dm-haiku},
-    author = {Raffael Bolla Di Lorenzo},
-    url = {https://github.com/Raffaelbdl/hyperbolic-nn-haiku},
-    version = {0.0.1},
-    year = {2022}
-}
-```
